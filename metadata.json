@@ -1,0 +1,7 @@
+{
+  "name": "Astral Runes: Match-3",
+  "description": "A cyber-celestial 3D layered tile match-3 puzzle game with procedural Web Audio synthesizer and cloud sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

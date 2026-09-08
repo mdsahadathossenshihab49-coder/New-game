@@ -1,0 +1,30 @@
+{
+  "name": "cyber-celestial-tile-match",
+  "version": "1.0.0",
+  "description": "Cyber-Celestial Relics: Tile Match-3 Android Native APK with Capacitor and GitHub Actions CI/CD",
+  "main": "index.html",
+  "scripts": {
+    "build": "mkdir -p www && cp index.html www/",
+    "cap:add": "cap add android",
+    "cap:sync": "cap sync android",
+    "cap:build": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/android": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  },
+  "keywords": [
+    "match-3",
+    "tile-match",
+    "android",
+    "apk",
+    "capacitor",
+    "mobile-game",
+    "cyberpunk"
+  ],
+  "author": "Cyber-Celestial Architect",
+  "license": "MIT"
+}

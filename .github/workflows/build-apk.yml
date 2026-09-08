@@ -1,0 +1,76 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Compile Android Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Checkout Repository Source Code
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java JDK 17 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🤖 Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 🟢 Set up Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install NPM & Capacitor Dependencies
+        run: |
+          npm install
+
+      - name: 🌐 Package Web Assets for Capacitor
+        run: |
+          mkdir -p www
+          cp index.html www/
+          ls -la www/
+
+      - name: ⚙️ Initialize and Synchronize Capacitor Android Platform
+        run: |
+          if [ ! -d "android" ]; then
+            echo "Initializing fresh Capacitor Android native project..."
+            npx cap add android
+          fi
+          npx cap sync android
+
+      - name: 🔑 Grant Execution Permissions to Gradle Wrapper
+        run: |
+          chmod +x android/gradlew
+
+      - name: 🔨 Compile Android Native APK (assembleDebug)
+        run: |
+          cd android
+          ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: 🔍 Locate Generated Debug APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          echo "Found APK at: $APK_PATH"
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
+      - name: 📤 Upload Downloadable APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CyberRelics-Match-Debug-APK
+          path: ${{ steps.find_apk.outputs.apk_path }}
+          retention-days: 30

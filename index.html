@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Cyber-Celestial Relics: Tile Match-3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-space: #060814;
+      --panel-bg: rgba(13, 17, 34, 0.85);
+      --neon-cyan: #00f0ff;
+      --neon-magenta: #e056fd;
+      --neon-amber: #fbc531;
+      --neon-emerald: #00ff88;
+      --neon-plasma: #ff3838;
+      --neon-violet: #9b59b6;
+      --neon-gold: #ffbe0b;
+      --neon-indigo: #4b7bec;
+      --font-title: 'Orbitron', -apple-system, sans-serif;
+      --font-body: 'Rajdhani', -apple-system, sans-serif;
+      --tray-slot-size: 56px;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-space);
+      font-family: var(--font-body);
+      color: #e0e6ff;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .nebula-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .game-viewport {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      height: 100vh;
+      height: 100dvh;
+      background: radial-gradient(circle at 50% 15%, rgba(32, 20, 68, 0.65) 0%, rgba(8, 10, 22, 0.96) 80%);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(0, 240, 255, 0.2);
+      overflow: hidden;
+    }
+
+    /* Top HUD Header */
+    .hud-header {
+      padding: 10px 14px 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(13, 17, 34, 0.9) 0%, rgba(13, 17, 34, 0.3) 100%);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .hud-sector-badge {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hud-tag {
+      font-family: var(--font-title);
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+
+    .hud-sector-num {
+      font-family: var(--font-title);
+      font-size: 17px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hard-badge {
+      background: linear-gradient(135deg, #ff3838, #c23616);
+      color: #fff;
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      animation: hardPulse 1.5s infinite alternate;
+    }
+
+    @keyframes hardPulse {
+      from { box-shadow: 0 0 4px #ff3838; }
+      to { box-shadow: 0 0 12px #ff3838; }
+    }
+
+    .hud-stats {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .hud-stat-box {
+      text-align: right;
+    }
+
+    .hud-stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8fa0dd;
+    }
+
+    .hud-stat-val {
+      font-family: var(--font-title);
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .coin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(251, 197, 49, 0.12);
+      border: 1px solid var(--neon-amber);
+      color: var(--neon-amber);
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-family: var(--font-title);
+      font-size: 12px;
+      font-weight: 700;
+      text-shadow: 0 0 6px var(--neon-amber);
+    }
+
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--neon-cyan);
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s ease;
+    }
+
+    .hud-btn:hover {
+      background: rgba(0, 240, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    /* Sub HUD Bar */
+    .hud-subbar {
+      padding: 4px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #a0b2eb;
+    }
+
+    .daily-btn {
+      background: rgba(0, 255, 136, 0.12);
+      border: 1px solid var(--neon-emerald);
+      color: var(--neon-emerald);
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-family: var(--font-title);
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .daily-btn:hover {
+      background: rgba(0, 255, 136, 0.25);
+      box-shadow: 0 0 10px var(--neon-emerald);
+    }
+
+    /* Tutorial Banner */
+    .tutorial-banner {
+      background: linear-gradient(90deg, rgba(0, 240, 255, 0.15) 0%, rgba(224, 86, 253, 0.15) 100%);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 8px;
+      margin: 4px 14px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #fff;
+      animation: bannerGlow 2s infinite alternate;
+    }
+
+    @keyframes bannerGlow {
+      from { border-color: var(--neon-cyan); box-shadow: 0 0 6px rgba(0,240,255,0.3); }
+      to { border-color: var(--neon-magenta); box-shadow: 0 0 12px rgba(224,86,253,0.5); }
+    }
+
+    /* Main Board Stage */
+    .board-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .board-stage {
+      position: relative;
+      width: 340px;
+      height: 380px;
+    }
+
+    /* Relic Tile Styling */
+    .relic-tile {
+      position: absolute;
+      width: 52px;
+      height: 62px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      background: linear-gradient(150deg, #1b2038 0%, #0d1020 95%);
+      box-shadow: 0 5px 0 #070912, 0 8px 14px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      transform-origin: center center;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.25s ease, opacity 0.25s ease;
+      will-change: transform, left, top;
+    }
+
+    .relic-tile::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 100%);
+      border-radius: 11px 11px 0 0;
+      pointer-events: none;
+    }
+
+    .relic-tile[data-type="void-singularity"] { border-color: rgba(224, 86, 253, 0.5); --accent: var(--neon-magenta); }
+    .relic-tile[data-type="quantum-prism"] { border-color: rgba(0, 240, 255, 0.5); --accent: var(--neon-cyan); }
+    .relic-tile[data-type="chrono-core"] { border-color: rgba(255, 190, 11, 0.5); --accent: var(--neon-gold); }
+    .relic-tile[data-type="plasma-rune"] { border-color: rgba(255, 56, 56, 0.5); --accent: var(--neon-plasma); }
+    .relic-tile[data-type="bio-spore"] { border-color: rgba(0, 255, 136, 0.5); --accent: var(--neon-emerald); }
+    .relic-tile[data-type="astral-monolith"] { border-color: rgba(155, 89, 182, 0.5); --accent: var(--neon-violet); }
+    .relic-tile[data-type="hyper-tesseract"] { border-color: rgba(251, 197, 49, 0.5); --accent: var(--neon-amber); }
+    .relic-tile[data-type="dark-matter-tear"] { border-color: rgba(75, 123, 236, 0.5); --accent: var(--neon-indigo); }
+
+    .relic-tile.active-tile:hover {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 8px 0 #070912, 0 12px 20px rgba(0, 0, 0, 0.8), 0 0 14px var(--accent);
+      z-index: 100 !important;
+    }
+
+    .relic-tile.tutorial-focus {
+      animation: tutorialPulse 1.2s infinite alternate ease-in-out;
+      border-color: #fff !important;
+    }
+
+    @keyframes tutorialPulse {
+      from { transform: scale(1); box-shadow: 0 0 8px var(--neon-cyan); }
+      to { transform: scale(1.08); box-shadow: 0 0 20px var(--neon-cyan), 0 0 30px #fff; }
+    }
+
+    .relic-tile.blocked-tile {
+      opacity: 0.4;
+      filter: grayscale(80%) brightness(0.48);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .relic-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .relic-icon svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+    }
+
+    /* Booster Action Dock */
+    .booster-dock {
+      padding: 6px 14px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(13, 17, 34, 0.6);
+      border-top: 1px solid rgba(0, 240, 255, 0.12);
+    }
+
+    .booster-btn {
+      flex: 1;
+      max-width: 110px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(99, 132, 255, 0.3);
+      border-radius: 10px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .booster-btn:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--neon-cyan);
+      transform: translateY(-2px);
+    }
+
+    .booster-title {
+      font-family: var(--font-title);
+      font-size: 11px;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .booster-cost {
+      font-size: 10px;
+      color: var(--neon-amber);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    /* Bottom Stasis Containment Tray (Holding Bar: Exactly 5 Slots) */
+    .tray-wrapper {
+      padding: 10px 14px 18px;
+      background: linear-gradient(0deg, rgba(8, 10, 22, 0.98) 0%, rgba(13, 17, 34, 0.9) 100%);
+      border-top: 1px solid rgba(0, 240, 255, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .tray-caption {
+      font-size: 11px;
+      letter-spacing: 2px;
+      font-family: var(--font-title);
+      color: #8fa0dd;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tray-indicator-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 6px var(--neon-cyan);
+    }
+
+    .tray-dock {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(4, 7, 16, 0.85);
+      padding: 8px 10px;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 240, 255, 0.08);
+      position: relative;
+    }
+
+    .tray-slot {
+      width: var(--tray-slot-size);
+      height: 68px;
+      border-radius: 12px;
+      background: rgba(20, 25, 48, 0.4);
+      border: 1px dashed rgba(99, 132, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .tray-tile {
+      position: absolute;
+      width: 50px;
+      height: 60px;
+      border-radius: 12px;
+      padding: 4px;
+      background: linear-gradient(150deg, #1f2542 0%, #101428 95%);
+      box-shadow: 0 4px 0 #070912, 0 6px 12px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transform-origin: center center;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+    }
+
+    .tray-tile.matching-burst {
+      animation: matchDissolve 0.38s forwards ease-in-out;
+    }
+
+    @keyframes matchDissolve {
+      0% { transform: scale(1); filter: brightness(1); }
+      40% { transform: scale(1.35) rotate(8deg); filter: brightness(2.5) drop-shadow(0 0 15px #fff); }
+      100% { transform: scale(0) rotate(-15deg); opacity: 0; }
+    }
+
+    .particle-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 500;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 6, 15, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-window {
+      width: 100%;
+      max-width: 360px;
+      background: linear-gradient(165deg, rgba(21, 26, 52, 0.98) 0%, rgba(10, 13, 26, 0.98) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.2), 0 20px 40px rgba(0, 0, 0, 0.8);
+      position: relative;
+      transform: translateY(20px) scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.open .modal-window {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .modal-title {
+      font-family: var(--font-title);
+      font-size: 19px;
+      font-weight: 700;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+
+    .modal-desc {
+      font-size: 14px;
+      color: #b0c0ed;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .setting-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e2e9ff;
+    }
+
+    .setting-sub {
+      font-size: 11px;
+      color: #8fa0dd;
+    }
+
+    .cyber-toggle {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      cursor: pointer;
+    }
+
+    .cyber-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .cyber-toggle .slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 26px;
+      transition: 0.3s;
+    }
+
+    .cyber-toggle .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+
+    .cyber-toggle input:checked + .slider {
+      background-color: var(--neon-cyan);
+      box-shadow: 0 0 12px var(--neon-cyan);
+    }
+
+    .cyber-toggle input:checked + .slider:before {
+      transform: translateX(22px);
+      background-color: #060914;
+    }
+
+    .cyber-btn {
+      width: 100%;
+      padding: 11px;
+      border-radius: 12px;
+      font-family: var(--font-title);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      margin-top: 10px;
+    }
+
+    .cyber-btn-primary {
+      background: linear-gradient(135deg, #00f0ff 0%, #0088ff 100%);
+      color: #040817;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+    }
+
+    .cyber-btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e0e6ff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .cyber-btn-danger {
+      background: linear-gradient(135deg, #ff3838 0%, #c23616 100%);
+      color: #fff;
+      box-shadow: 0 0 16px rgba(255, 56, 56, 0.4);
+    }
+
+    .cyber-toast {
+      position: absolute;
+      top: 65px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(13, 17, 34, 0.96);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 20px;
+      padding: 7px 16px;
+      font-family: var(--font-title);
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .cyber-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .svg-defs {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="nebulaCanvas" class="nebula-canvas"></canvas>
+
+  <main class="game-viewport">
+    <header class="hud-header">
+      <div class="hud-sector-badge">
+        <span class="hud-tag">SECTOR</span>
+        <span class="hud-sector-num">
+          <span id="hudSectorNum">01</span>
+          <span id="hardBadge" class="hard-badge" style="display:none;">HARD</span>
+        </span>
+      </div>
+
+      <div class="hud-stats">
+        <div class="coin-badge">
+          <span>🪙</span>
+          <span id="hudCoins">300</span>
+        </div>
+        <div class="hud-stat-box">
+          <div class="hud-stat-label">SCORE</div>
+          <div id="hudScore" class="hud-stat-val">0</div>
+        </div>
+      </div>
+
+      <button id="settingsBtn" class="hud-btn" title="Settings" aria-label="Settings">⚙️</button>
+    </header>
+
+    <div class="hud-subbar">
+      <div>RELICS: <span id="hudRelicsLeft" style="color:#fff; font-weight:700;">--</span></div>
+      <button id="dailyBtn" class="daily-btn">
+        <span>📅</span> DAILY (+25🪙)
+      </button>
+      <div id="multiplierBadge" style="color:var(--neon-amber); font-family:var(--font-title); font-size:11px;">x1 MULTI</div>
+    </div>
+
+    <div id="tutorialBanner" class="tutorial-banner" style="display:none;">
+      <span>💡</span>
+      <span id="tutorialText">TUTORIAL: Tap glowing unlocked relics to place them in the 5-slot tray. Group 3 identical relics to match!</span>
+    </div>
+
+    <section class="board-container">
+      <div id="boardStage" class="board-stage"></div>
+      <canvas id="particleCanvas" class="particle-canvas"></canvas>
+    </section>
+
+    <!-- Boosters Dock -->
+    <div class="booster-dock">
+      <button id="boosterUndo" class="booster-btn">
+        <div class="booster-title">↩️ UNDO</div>
+        <div class="booster-cost">100 🪙</div>
+      </button>
+      <button id="boosterShuffle" class="booster-btn">
+        <div class="booster-title">🔀 SHUFFLE</div>
+        <div class="booster-cost">150 🪙</div>
+      </button>
+      <button id="boosterAuto" class="booster-btn">
+        <div class="booster-title">⚡ AUTO-3</div>
+        <div class="booster-cost">200 🪙</div>
+      </button>
+    </div>
+
+    <!-- 5-Slot Holding Tray -->
+    <footer class="tray-wrapper">
+      <div class="tray-caption">
+        <span class="tray-indicator-dot"></span>
+        STASIS TRAY &bull; 5 SLOTS
+      </div>
+      <div id="trayDock" class="tray-dock">
+        <div class="tray-slot" data-slot="0"></div>
+        <div class="tray-slot" data-slot="1"></div>
+        <div class="tray-slot" data-slot="2"></div>
+        <div class="tray-slot" data-slot="3"></div>
+        <div class="tray-slot" data-slot="4"></div>
+      </div>
+    </footer>
+
+    <div id="cyberToast" class="cyber-toast">MATCH-3!</div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+      <div class="modal-window">
+        <button id="closeSettingsBtn" class="modal-close-btn">&times;</button>
+        <h2 class="modal-title">⚙️ SYSTEM CONTROL</h2>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Sound Effects (SFX)</div>
+            <div class="setting-sub">Tactile resonant synth chimes</div>
+          </div>
+          <label class="cyber-toggle">
+            <input type="checkbox" id="sfxToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Cosmic Synth (BGM)</div>
+            <div class="setting-sub">Generative ambient space loop</div>
+          </div>
+          <label class="cyber-toggle">
+            <input type="checkbox" id="bgmToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button id="restartSectorBtn" class="cyber-btn cyber-btn-secondary">
+          🔄 RESTART SECTOR
+        </button>
+
+        <div style="margin-top:16px; padding:12px; background:rgba(0,0,0,0.4); border-radius:10px; font-size:12px;">
+          <div style="color:#8fa0dd; margin-bottom:4px;">PROFILE STATUS</div>
+          <div id="authStatusText" style="color:var(--neon-emerald); font-weight:700;">Local Guest &bull; Offline Active</div>
+          <div style="color:#687fb6; font-size:11px; margin-top:2px;">Coins & Progress automatically saved to storage.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="victoryModal" class="modal-overlay">
+      <div class="modal-window" style="text-align:center;">
+        <div style="font-size:36px; margin-bottom:8px;">✨</div>
+        <h2 class="modal-title" style="justify-content:center; color:var(--neon-cyan);">SECTOR PURIFIED!</h2>
+        <p class="modal-desc">All relics harmonized and containment stasis preserved.</p>
+
+        <div style="background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.3); border-radius:12px; padding:12px; margin-bottom:16px;">
+          <div style="font-size:12px; color:#8fa0dd;">REWARDS</div>
+          <div id="victoryBonusText" style="font-family:var(--font-title); font-size:20px; font-weight:700; color:var(--neon-amber);">+1,000 PTS &bull; +50 🪙</div>
+          <div id="levelBonusBanner" style="display:none; color:#00ff88; font-size:12px; font-weight:bold; margin-top:4px;">🎉 10-LEVEL MILESTONE: +100 BONUS COINS!</div>
+        </div>
+
+        <button id="nextSectorBtn" class="cyber-btn cyber-btn-primary">
+          ADVANCE TO NEXT SECTOR ⚡
+        </button>
+      </div>
+    </div>
+
+    <!-- Defeat Modal -->
+    <div id="defeatModal" class="modal-overlay">
+      <div class="modal-window" style="text-align:center;">
+        <div style="font-size:36px; margin-bottom:8px;">⚠️</div>
+        <h2 class="modal-title" style="justify-content:center; color:var(--neon-plasma);">SYSTEM OVERLOAD</h2>
+        <p class="modal-desc">Stasis tray filled with 5 unharmonized relics.</p>
+
+        <div style="background:rgba(255,56,56,0.08); border:1px solid rgba(255,56,56,0.3); border-radius:12px; padding:12px; margin-bottom:16px;">
+          <div style="font-size:12px; color:#ffa8a8;">TOTAL SECTOR SCORE</div>
+          <div id="defeatScoreText" style="font-family:var(--font-title); font-size:20px; font-weight:700; color:#fff;">0 PTS</div>
+        </div>
+
+        <button id="retrySectorBtn" class="cyber-btn cyber-btn-danger">
+          PURGE & RETRY 🔄
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 8 Vector SVG Definitions (NO Fruit Emojis) -->
+  <svg class="svg-defs" aria-hidden="true">
+    <defs>
+      <filter id="cyberGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+
+      <!-- 1. VOID SINGULARITY -->
+      <g id="svg-void-singularity">
+        <radialGradient id="gradVoid" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#05000d" />
+          <stop offset="45%" stop-color="#2b0938" />
+          <stop offset="85%" stop-color="#e056fd" />
+          <stop offset="100%" stop-color="#7d00b3" />
+        </radialGradient>
+        <circle cx="50" cy="50" r="42" fill="url(#gradVoid)" stroke="#e056fd" stroke-width="2.5" />
+        <path d="M50 16 C30 20 20 40 28 62 C34 78 58 78 68 62 C74 50 68 34 54 36 C44 38 42 50 48 54 C52 56 56 52 54 50" 
+              fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.9" />
+        <circle cx="50" cy="50" r="6" fill="#000000" stroke="#e056fd" stroke-width="1.5" />
+        <circle cx="50" cy="50" r="2.5" fill="#ffffff" />
+      </g>
+
+      <!-- 2. QUANTUM PRISM -->
+      <g id="svg-quantum-prism">
+        <linearGradient id="gradPrismTop" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff" />
+          <stop offset="50%" stop-color="#00f0ff" />
+          <stop offset="100%" stop-color="#0088cc" />
+        </linearGradient>
+        <polygon points="50,10 78,46 50,56" fill="#33ffff" />
+        <polygon points="50,10 22,46 50,56" fill="#00e5ff" />
+        <polygon points="50,56 78,46 50,90" fill="url(#gradPrismTop)" opacity="0.8" />
+        <polygon points="50,56 22,46 50,90" fill="#004488" />
+        <polyline points="50,10 50,90" stroke="#ffffff" stroke-width="2" opacity="0.9" />
+        <polyline points="22,46 50,56 78,46" stroke="#ffffff" stroke-width="1.8" />
+        <circle cx="50" cy="53" r="4" fill="#ffffff" filter="url(#cyberGlow)" />
+      </g>
+
+      <!-- 3. CHRONO CORE -->
+      <g id="svg-chrono-core">
+        <radialGradient id="gradChrono" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fff6cc" />
+          <stop offset="50%" stop-color="#ffbe0b" />
+          <stop offset="100%" stop-color="#d48800" />
+        </radialGradient>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="url(#gradChrono)" stroke-width="3" />
+        <ellipse cx="50" cy="50" rx="38" ry="18" fill="none" stroke="#ffeaa7" stroke-width="2" transform="rotate(35 50 50)" />
+        <ellipse cx="50" cy="50" rx="38" ry="18" fill="none" stroke="#ffbe0b" stroke-width="2" transform="rotate(-35 50 50)" />
+        <circle cx="50" cy="14" r="2.5" fill="#fff" />
+        <circle cx="86" cy="50" r="2.5" fill="#fff" />
+        <circle cx="50" cy="86" r="2.5" fill="#fff" />
+        <circle cx="14" cy="50" r="2.5" fill="#fff" />
+        <polygon points="50,28 54,46 72,50 54,54 50,72 46,54 28,50 46,46" fill="url(#gradChrono)" />
+        <circle cx="50" cy="50" r="5" fill="#ffffff" />
+      </g>
+
+      <!-- 4. PLASMA RUNE -->
+      <g id="svg-plasma-rune">
+        <linearGradient id="gradPlasma" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stop-color="#800000" />
+          <stop offset="40%" stop-color="#ff3838" />
+          <stop offset="80%" stop-color="#ff9f43" />
+          <stop offset="100%" stop-color="#fff200" />
+        </linearGradient>
+        <path d="M50 8 C68 28 78 52 74 72 C70 86 58 92 50 92 C42 92 30 86 26 72 C22 52 32 28 50 8 Z" 
+              fill="url(#gradPlasma)" stroke="#ff4d4d" stroke-width="2" />
+        <path d="M50 24 L60 48 L40 48 Z M44 54 L56 54 L50 80 Z" fill="#ffffff" opacity="0.9" />
+        <circle cx="50" cy="62" r="3" fill="#ff3838" />
+      </g>
+
+      <!-- 5. BIO-SPORE -->
+      <g id="svg-bio-spore">
+        <linearGradient id="gradBio" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#a8ff78" />
+          <stop offset="60%" stop-color="#00ff88" />
+          <stop offset="100%" stop-color="#006633" />
+        </linearGradient>
+        <polygon points="50,12 84,30 84,70 50,88 16,70 16,30" fill="#042010" stroke="url(#gradBio)" stroke-width="3" />
+        <path d="M50 50 L50 20 M50 50 L76 34 M50 50 L76 66 M50 50 L50 80 M50 50 L24 66 M50 50 L24 34" 
+              stroke="#00ff88" stroke-width="2.5" stroke-linecap="round" />
+        <circle cx="50" cy="20" r="3" fill="#a8ff78" />
+        <circle cx="76" cy="34" r="3" fill="#a8ff78" />
+        <circle cx="76" cy="66" r="3" fill="#a8ff78" />
+        <circle cx="50" cy="80" r="3" fill="#a8ff78" />
+        <circle cx="24" cy="66" r="3" fill="#a8ff78" />
+        <circle cx="24" cy="34" r="3" fill="#a8ff78" />
+        <circle cx="50" cy="50" r="6" fill="#ffffff" filter="url(#cyberGlow)" />
+      </g>
+
+      <!-- 6. ASTRAL MONOLITH -->
+      <g id="svg-astral-monolith">
+        <linearGradient id="gradMonolith" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#3c1053" />
+          <stop offset="50%" stop-color="#8e44ad" />
+          <stop offset="100%" stop-color="#2c003e" />
+        </linearGradient>
+        <polygon points="50,10 68,26 64,88 36,88 32,26" fill="url(#gradMonolith)" stroke="#be2edd" stroke-width="2" />
+        <line x1="50" y1="10" x2="50" y2="88" stroke="#e056fd" stroke-width="2" />
+        <path d="M42 38 L50 44 L58 38 M44 54 L50 60 L56 54 M42 72 L50 78 L58 72" 
+              fill="none" stroke="#00f0ff" stroke-width="2" stroke-linecap="round" />
+        <circle cx="50" cy="24" r="3" fill="#00f0ff" filter="url(#cyberGlow)" />
+      </g>
+
+      <!-- 7. HYPER-TESSERACT -->
+      <g id="svg-hyper-tesseract">
+        <polygon points="50,12 84,30 84,70 50,88 16,70 16,30" fill="none" stroke="#fbc531" stroke-width="2.5" />
+        <line x1="50" y1="12" x2="50" y2="50" stroke="#fbc531" stroke-width="2" />
+        <line x1="84" y1="30" x2="50" y2="50" stroke="#fbc531" stroke-width="2" />
+        <line x1="16" y1="30" x2="50" y2="50" stroke="#fbc531" stroke-width="2" />
+        <polygon points="50,32 68,42 68,62 50,72 32,62 32,42" fill="rgba(251, 197, 49, 0.25)" stroke="#fff" stroke-width="1.8" />
+        <line x1="50" y1="12" x2="50" y2="32" stroke="#fffa65" stroke-width="1.5" />
+        <line x1="84" y1="30" x2="68" y2="42" stroke="#fffa65" stroke-width="1.5" />
+        <line x1="84" y1="70" x2="68" y2="62" stroke="#fffa65" stroke-width="1.5" />
+        <line x1="50" y1="88" x2="50" y2="72" stroke="#fffa65" stroke-width="1.5" />
+        <line x1="16" y1="70" x2="32" y2="62" stroke="#fffa65" stroke-width="1.5" />
+        <line x1="16" y1="30" x2="32" y2="42" stroke="#fffa65" stroke-width="1.5" />
+        <circle cx="50" cy="52" r="4" fill="#ffffff" />
+      </g>
+
+      <!-- 8. DARK MATTER TEAR -->
+      <g id="svg-dark-matter-tear">
+        <radialGradient id="gradTear" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff" />
+          <stop offset="25%" stop-color="#00d2d3" />
+          <stop offset="60%" stop-color="#3742fa" />
+          <stop offset="100%" stop-color="#0c0e2a" />
+        </radialGradient>
+        <path d="M50 8 C66 32 76 44 76 52 C76 66 64 88 50 92 C36 88 24 66 24 52 C24 44 34 32 50 8 Z" 
+              fill="url(#gradTear)" stroke="#70a1ff" stroke-width="2" />
+        <path d="M50 18 L46 36 L56 46 L42 62 L52 82" 
+              fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="56" cy="46" r="3" fill="#ffffff" filter="url(#cyberGlow)" />
+      </g>
+    </defs>
+  </svg>
+
+  <script type="module">
+    /******************************************************************
+     * 1. WEB AUDIO SYNTHESIZER
+     ******************************************************************/
+    class CosmicAudioSynthesizer {
+      constructor() {
+        this.ctx = null;
+        this.sfxGain = null;
+        this.bgmGain = null;
+        this.isSfxEnabled = true;
+        this.isBgmEnabled = true;
+        this.bgmTimer = null;
+        this.bgmStep = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+          const master = this.ctx.createGain();
+          master.gain.setValueAtTime(0.7, this.ctx.currentTime);
+          master.connect(this.ctx.destination);
+
+          this.sfxGain = this.ctx.createGain();
+          this.sfxGain.connect(master);
+
+          this.bgmGain = this.ctx.createGain();
+          this.bgmGain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          this.bgmGain.connect(master);
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTilePick() {
+        if (!this.isSfxEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const freqs = [523.25, 659.25, 783.99, 1046.5];
+        const f = freqs[Math.floor(Math.random() * freqs.length)];
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now);
+        osc.frequency.exponentialRampToValueAtTime(f * 1.3, now + 0.15);
+        g.gain.setValueAtTime(0.3, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(g);
+        g.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+
+      playMatch3() {
+        if (!this.isSfxEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.04);
+          g.gain.setValueAtTime(0, now + i * 0.04);
+          g.gain.linearRampToValueAtTime(0.35, now + i * 0.04 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.4);
+          osc.connect(g);
+          g.connect(this.sfxGain);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.45);
+        });
+      }
+
+      playVictory() {
+        if (!this.isSfxEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.1);
+          g.gain.setValueAtTime(0.35, now + i * 0.1);
+          g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.6);
+          osc.connect(g);
+          g.connect(this.sfxGain);
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.65);
+        });
+      }
+
+      playDefeat() {
+        if (!this.isSfxEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.6);
+        g.gain.setValueAtTime(0.4, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.connect(g);
+        g.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.75);
+      }
+
+      playError() {
+        if (!this.isSfxEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.setValueAtTime(170, now + 0.08);
+        g.gain.setValueAtTime(0.35, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.connect(g);
+        g.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      playBooster() {
+        if (!this.isSfxEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+        g.gain.setValueAtTime(0.3, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.connect(g);
+        g.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.38);
+      }
+
+      startBgm() {
+        if (this.bgmTimer) return;
+        this.init();
+        const chords = [
+          [155.56, 233.08, 293.66, 349.23],
+          [196.00, 293.66, 349.23, 440.00],
+          [207.65, 261.63, 311.13, 392.00],
+          [233.08, 293.66, 349.23, 440.00]
+        ];
+        const loop = () => {
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const chord = chords[this.bgmStep % chords.length];
+          this.bgmStep++;
+          chord.forEach(f => {
+            const osc = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now);
+            g.gain.setValueAtTime(0, now);
+            g.gain.linearRampToValueAtTime(this.isBgmEnabled ? 0.05 : 0, now + 1.2);
+            g.gain.linearRampToValueAtTime(0.001, now + 3.8);
+            osc.connect(g);
+            g.connect(this.bgmGain);
+            osc.start(now);
+            osc.stop(now + 4.0);
+          });
+        };
+        loop();
+        this.bgmTimer = setInterval(loop, 3800);
+      }
+    }
+
+    const sound = new CosmicAudioSynthesizer();
+
+    /******************************************************************
+     * 2. GAME STATE & RELIC TYPES
+     ******************************************************************/
+    const RELICS = [
+      { id: 'void-singularity', color: '#e056fd' },
+      { id: 'quantum-prism', color: '#00f0ff' },
+      { id: 'chrono-core', color: '#ffbe0b' },
+      { id: 'plasma-rune', color: '#ff3838' },
+      { id: 'bio-spore', color: '#00ff88' },
+      { id: 'astral-monolith', color: '#9b59b6' },
+      { id: 'hyper-tesseract', color: '#fbc531' },
+      { id: 'dark-matter-tear', color: '#4b7bec' }
+    ];
+
+    const state = {
+      sector: 1,
+      score: 0,
+      coins: 300,
+      multiplier: 1,
+      lastMatchTime: 0,
+      boardTiles: [],
+      trayTiles: [],
+      moveHistory: [],
+      lastDailyDate: null,
+      isDailyMode: false,
+      isBusy: false
+    };
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem('cyber_relics_save');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state.sector = parsed.sector || 1;
+          state.coins = parsed.coins !== undefined ? parsed.coins : 300;
+          state.score = parsed.score || 0;
+          state.lastDailyDate = parsed.lastDailyDate || null;
+        }
+      } catch (e) {}
+      updateHUD();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem('cyber_relics_save', JSON.stringify({
+          sector: state.sector,
+          coins: state.coins,
+          score: state.score,
+          lastDailyDate: state.lastDailyDate
+        }));
+      } catch (e) {}
+    }
+
+    /******************************************************************
+     * 3. PROCEDURAL LEVEL GENERATOR & OVERLAP SYSTEM
+     ******************************************************************/
+    function generateBoard(sectorNum, isDaily = false) {
+      const stage = document.getElementById('boardStage');
+      stage.innerHTML = '';
+      state.boardTiles = [];
+      state.trayTiles = [];
+      state.moveHistory = [];
+      renderTray();
+
+      const isHard = (sectorNum % 5 === 0) && !isDaily;
+      document.getElementById('hardBadge').style.display = isHard ? 'inline-block' : 'none';
+
+      // Tutorial on Level 1
+      const isTutorial = (sectorNum === 1 && !isDaily);
+      document.getElementById('tutorialBanner').style.display = isTutorial ? 'flex' : 'none';
+
+      // Determine relic count and triplets
+      const relicPoolCount = Math.min(3 + Math.floor(sectorNum / 2), RELICS.length);
+      const activeRelics = RELICS.slice(0, relicPoolCount);
+
+      // Number of sets of 3
+      let sets = isTutorial ? 4 : Math.min(5 + sectorNum + (isHard ? 3 : 0), 15);
+      const totalTiles = sets * 3;
+
+      const pool = [];
+      for (let s = 0; s < sets; s++) {
+        const r = activeRelics[s % activeRelics.length];
+        pool.push(r.id, r.id, r.id);
+      }
+
+      // Shuffle pool
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+
+      // Generate positions with multi-layer 3D stacking
+      const positions = [];
+      const startX = 16, startY = 20, stepX = 58, stepY = 64;
+
+      // Layer 0: Grid
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          positions.push({ x: startX + c * stepX, y: startY + r * stepY, layer: 0 });
+        }
+      }
+      // Layer 1: Pyramid Offset
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          positions.push({ x: startX + c * stepX + 29, y: startY + r * stepY + 32, layer: 1 });
+        }
+      }
+      // Layer 2: Core
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          positions.push({ x: startX + (c + 1) * stepX, y: startY + (r + 1) * stepY, layer: 2 });
+        }
+      }
+      // Layer 3: Apex Center
+      positions.push(
+        { x: startX + 2 * stepX, y: startY + 2 * stepY, layer: 3 },
+        { x: startX + 2 * stepX - 16, y: startY + 2 * stepY - 14, layer: 3 },
+        { x: startX + 2 * stepX + 16, y: startY + 2 * stepY + 14, layer: 3 }
+      );
+
+      // Shuffle candidate positions
+      for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+      }
+
+      const selected = positions.slice(0, totalTiles).sort((a, b) => a.layer - b.layer);
+
+      selected.forEach((pos, idx) => {
+        const relicType = pool[idx];
+        const tileId = `tile-${idx}-${Date.now()}`;
+        const el = document.createElement('div');
+        el.className = 'relic-tile';
+        el.id = tileId;
+        el.dataset.type = relicType;
+        el.dataset.layer = pos.layer;
+        el.style.left = `${pos.x}px`;
+        el.style.top = `${pos.y}px`;
+        el.style.zIndex = (pos.layer * 10) + 1;
+
+        const depth = pos.layer + 1;
+        el.style.boxShadow = `0 ${4 + depth * 2}px 0 #070912, 0 ${6 + depth * 3}px ${10 + depth * 3}px rgba(0,0,0,0.7)`;
+
+        el.innerHTML = `<div class="relic-icon"><svg viewBox="0 0 100 100"><use href="#svg-${relicType}"></use></svg></div>`;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onTileClick(tileId);
+        });
+
+        stage.appendChild(el);
+
+        state.boardTiles.push({
+          id: tileId,
+          type: relicType,
+          x: pos.x,
+          y: pos.y,
+          layer: pos.layer,
+          element: el,
+          isBlocked: false
+        });
+      });
+
+      recalculateOverlaps();
+      updateHUD();
+    }
+
+    function recalculateOverlaps() {
+      const tiles = state.boardTiles;
+      for (let i = 0; i < tiles.length; i++) {
+        const lower = tiles[i];
+        let covered = false;
+
+        for (let j = 0; j < tiles.length; j++) {
+          if (i === j) continue;
+          const upper = tiles[j];
+          if (upper.layer > lower.layer) {
+            const dx = Math.abs(upper.x - lower.x);
+            const dy = Math.abs(upper.y - lower.y);
+            if (dx < 44 && dy < 54) {
+              covered = true;
+              break;
+            }
+          }
+        }
+
+        lower.isBlocked = covered;
+        if (covered) {
+          lower.element.classList.add('blocked-tile');
+          lower.element.classList.remove('active-tile', 'tutorial-focus');
+        } else {
+          lower.element.classList.remove('blocked-tile');
+          lower.element.classList.add('active-tile');
+          if (state.sector === 1 && !state.isDailyMode) {
+            lower.element.classList.add('tutorial-focus');
+          }
+        }
+      }
+    }
+
+    /******************************************************************
+     * 4. TILE EXTRACTION & TRAY LOGIC (5 SLOTS)
+     ******************************************************************/
+    function onTileClick(tileId) {
+      if (state.isBusy) return;
+      const idx = state.boardTiles.findIndex(t => t.id === tileId);
+      if (idx === -1) return;
+
+      const tile = state.boardTiles[idx];
+      if (tile.isBlocked) {
+        sound.playError();
+        return;
+      }
+
+      if (state.trayTiles.length >= 5) {
+        sound.playError();
+        showToast("TRAY FULL (5/5)");
+        return;
+      }
+
+      sound.playTilePick();
+      state.isBusy = true;
+
+      // Save for Undo booster
+      state.moveHistory.push({
+        id: tile.id,
+        type: tile.type,
+        x: tile.x,
+        y: tile.y,
+        layer: tile.layer
+      });
+
+      state.boardTiles.splice(idx, 1);
+      recalculateOverlaps();
+
+      // Kinetic animation to target tray slot
+      const targetSlot = document.querySelector(`.tray-slot[data-slot="${state.trayTiles.length}"]`);
+      const srcRect = tile.element.getBoundingClientRect();
+      const dstRect = targetSlot.getBoundingClientRect();
+
+      tile.element.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
+      tile.element.style.transform = `translate(${dstRect.left - srcRect.left}px, ${dstRect.top - srcRect.top}px) scale(0.95)`;
+      tile.element.style.zIndex = '999';
+
+      setTimeout(() => {
+        if (tile.element.parentNode) tile.element.parentNode.removeChild(tile.element);
+        state.trayTiles.push(tile);
+        renderTray();
+        state.isBusy = false;
+        resolveMatches();
+      }, 250);
+    }
+
+    function renderTray() {
+      const slots = document.querySelectorAll('.tray-slot');
+      slots.forEach((slot, idx) => {
+        slot.innerHTML = '';
+        if (idx < state.trayTiles.length) {
+          const t = state.trayTiles[idx];
+          const el = document.createElement('div');
+          el.className = 'tray-tile';
+          el.dataset.type = t.type;
+          el.innerHTML = `<div class="relic-icon"><svg viewBox="0 0 100 100"><use href="#svg-${t.type}"></use></svg></div>`;
+          slot.appendChild(el);
+        }
+      });
+      updateHUD();
+    }
+
+    function resolveMatches() {
+      const counts = {};
+      state.trayTiles.forEach(t => counts[t.type] = (counts[t.type] || 0) + 1);
+
+      let matchType = null;
+      for (const t in counts) {
+        if (counts[t] >= 3) {
+          matchType = t;
+          break;
+        }
+      }
+
+      if (matchType) {
+        state.isBusy = true;
+        sound.playMatch3();
+
+        // Multiplier & Coins (+10 Coins per match)
+        const now = Date.now();
+        state.multiplier = (now - state.lastMatchTime < 4500) ? Math.min(state.multiplier + 1, 5) : 1;
+        state.lastMatchTime = now;
+
+        const pts = 300 * state.multiplier;
+        state.score += pts;
+        state.coins += 10;
+        showToast(`MATCH-3! +${pts} PTS (+10🪙)`);
+
+        // Flash and dissolve
+        let removedCount = 0;
+        document.querySelectorAll('.tray-slot').forEach((slot, idx) => {
+          if (idx < state.trayTiles.length && state.trayTiles[idx].type === matchType && removedCount < 3) {
+            const tileEl = slot.querySelector('.tray-tile');
+            if (tileEl) tileEl.classList.add('matching-burst');
+            removedCount++;
+          }
+        });
+
+        setTimeout(() => {
+          let rem = 0;
+          state.trayTiles = state.trayTiles.filter(t => {
+            if (t.type === matchType && rem < 3) {
+              rem++;
+              return false;
+            }
+            return true;
+          });
+          renderTray();
+          state.isBusy = false;
+          checkWin();
+        }, 380);
+
+      } else {
+        if (state.trayTiles.length >= 5) {
+          sound.playDefeat();
+          document.getElementById('defeatScoreText').innerText = `${state.score.toLocaleString()} PTS`;
+          openModal('defeatModal');
+        } else {
+          checkWin();
+        }
+      }
+    }
+
+    function checkWin() {
+      if (state.boardTiles.length === 0 && state.trayTiles.length === 0) {
+        sound.playVictory();
+        const baseBonus = 1000 * state.sector;
+        state.score += baseBonus;
+        state.coins += 50;
+
+        // 100 Bonus Coins every 10 levels
+        const isTenMilestone = (state.sector % 10 === 0);
+        if (isTenMilestone) {
+          state.coins += 100;
+          document.getElementById('levelBonusBanner').style.display = 'block';
+        } else {
+          document.getElementById('levelBonusBanner').style.display = 'none';
+        }
+
+        saveState();
+        document.getElementById('victoryBonusText').innerText = `+${baseBonus.toLocaleString()} PTS &bull; +50 🪙`;
+        openModal('victoryModal');
+      }
+    }
+
+    /******************************************************************
+     * 5. POWER-UPS / BOOSTERS LOGIC
+     ******************************************************************/
+    // 1. UNDO / RECALL (100 Coins)
+    document.getElementById('boosterUndo').addEventListener('click', () => {
+      if (state.isBusy) return;
+      if (state.coins < 100) {
+        sound.playError();
+        showToast("NEED 100 🪙 FOR UNDO");
+        return;
+      }
+      if (state.trayTiles.length === 0 || state.moveHistory.length === 0) {
+        sound.playError();
+        showToast("NO TILES IN TRAY TO UNDO");
+        return;
+      }
+
+      state.coins -= 100;
+      sound.playBooster();
+
+      const lastMove = state.moveHistory.pop();
+      // Remove from tray
+      const trayIdx = state.trayTiles.findLastIndex(t => t.type === lastMove.type);
+      if (trayIdx !== -1) state.trayTiles.splice(trayIdx, 1);
+      renderTray();
+
+      // Restore to board
+      const stage = document.getElementById('boardStage');
+      const el = document.createElement('div');
+      el.className = 'relic-tile active-tile';
+      el.id = lastMove.id;
+      el.dataset.type = lastMove.type;
+      el.dataset.layer = lastMove.layer;
+      el.style.left = `${lastMove.x}px`;
+      el.style.top = `${lastMove.y}px`;
+      el.style.zIndex = (lastMove.layer * 10) + 1;
+      el.innerHTML = `<div class="relic-icon"><svg viewBox="0 0 100 100"><use href="#svg-${lastMove.type}"></use></svg></div>`;
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onTileClick(lastMove.id);
+      });
+      stage.appendChild(el);
+
+      state.boardTiles.push({
+        id: lastMove.id,
+        type: lastMove.type,
+        x: lastMove.x,
+        y: lastMove.y,
+        layer: lastMove.layer,
+        element: el,
+        isBlocked: false
+      });
+
+      recalculateOverlaps();
+      showToast("RECALLED TILE (-100🪙)");
+    });
+
+    // 2. RESHUFFLE / WARP (150 Coins)
+    document.getElementById('boosterShuffle').addEventListener('click', () => {
+      if (state.isBusy) return;
+      if (state.coins < 150) {
+        sound.playError();
+        showToast("NEED 150 🪙 TO SHUFFLE");
+        return;
+      }
+      if (state.boardTiles.length <= 1) {
+        sound.playError();
+        return;
+      }
+
+      state.coins -= 150;
+      sound.playBooster();
+
+      // Extract types and shuffle them across remaining positions
+      const types = state.boardTiles.map(t => t.type);
+      for (let i = types.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [types[i], types[j]] = [types[j], types[i]];
+      }
+
+      state.boardTiles.forEach((tile, idx) => {
+        tile.type = types[idx];
+        tile.element.dataset.type = types[idx];
+        tile.element.innerHTML = `<div class="relic-icon"><svg viewBox="0 0 100 100"><use href="#svg-${types[idx]}"></use></svg></div>`;
+      });
+
+      recalculateOverlaps();
+      showToast("BOARD RESHUFFLED (-150🪙)");
+    });
+
+    // 3. COSMIC AUTO-MATCH / INSTANT HINT (200 Coins)
+    document.getElementById('boosterAuto').addEventListener('click', () => {
+      if (state.isBusy) return;
+      if (state.coins < 200) {
+        sound.playError();
+        showToast("NEED 200 🪙 FOR AUTO-3");
+        return;
+      }
+
+      // Find any type that has at least 3 tiles across board + tray
+      const allAvailable = {};
+      state.trayTiles.forEach(t => allAvailable[t.type] = (allAvailable[t.type] || 0) + 1);
+      state.boardTiles.forEach(t => allAvailable[t.type] = (allAvailable[t.type] || 0) + 1);
+
+      let targetType = null;
+      for (const t in allAvailable) {
+        if (allAvailable[t] >= 3) {
+          targetType = t;
+          break;
+        }
+      }
+
+      if (!targetType) {
+        sound.playError();
+        showToast("NO MATCH-3 TRIPLET FOUND");
+        return;
+      }
+
+      state.coins -= 200;
+      sound.playBooster();
+
+      // Instantly harmonize 3 tiles of this type
+      let needed = 3;
+      // Remove from tray first
+      state.trayTiles = state.trayTiles.filter(t => {
+        if (t.type === targetType && needed > 0) {
+          needed--;
+          return false;
+        }
+        return true;
+      });
+
+      // Remove remaining needed from board
+      if (needed > 0) {
+        const stage = document.getElementById('boardStage');
+        for (let i = state.boardTiles.length - 1; i >= 0 && needed > 0; i--) {
+          if (state.boardTiles[i].type === targetType) {
+            stage.removeChild(state.boardTiles[i].element);
+            state.boardTiles.splice(i, 1);
+            needed--;
+          }
+        }
+      }
+
+      renderTray();
+      recalculateOverlaps();
+      sound.playMatch3();
+      state.score += 600;
+      showToast("AUTO-MATCH SYNCHRONIZED! (+600 PTS)");
+      checkWin();
+    });
+
+    /******************************************************************
+     * 6. DAILY CHALLENGE (+25 COINS / 24H)
+     ******************************************************************/
+    document.getElementById('dailyBtn').addEventListener('click', () => {
+      const today = new Date().toISOString().slice(0, 10);
+      if (state.lastDailyDate === today) {
+        sound.playError();
+        showToast("DAILY CLAIMED! RETURNS TOMORROW");
+        return;
+      }
+
+      sound.playBooster();
+      state.lastDailyDate = today;
+      state.coins += 25;
+      saveState();
+      updateHUD();
+      showToast("DAILY CHALLENGE CLAIMED! +25 🪙");
+      generateBoard(state.sector + 2, true);
+    });
+
+    /******************************************************************
+     * 7. HUD & MODAL HELPERS
+     ******************************************************************/
+    function updateHUD() {
+      document.getElementById('hudSectorNum').innerText = String(state.sector).padStart(2, '0');
+      document.getElementById('hudScore').innerText = state.score.toLocaleString();
+      document.getElementById('hudCoins').innerText = state.coins.toLocaleString();
+      document.getElementById('hudRelicsLeft').innerText = state.boardTiles.length;
+      document.getElementById('multiplierBadge').innerText = `x${state.multiplier} MULTI`;
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('cyberToast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    window.addEventListener('pointerdown', () => {
+      sound.init();
+      sound.startBgm();
+    }, { once: true });
+
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+      sound.playBooster();
+      openModal('settingsModal');
+    });
+    document.getElementById('closeSettingsBtn').addEventListener('click', () => closeModal('settingsModal'));
+
+    document.getElementById('sfxToggle').addEventListener('change', (e) => sound.isSfxEnabled = e.target.checked);
+    document.getElementById('bgmToggle').addEventListener('change', (e) => sound.isBgmEnabled = e.target.checked);
+
+    document.getElementById('restartSectorBtn').addEventListener('click', () => {
+      closeModal('settingsModal');
+      generateBoard(state.sector);
+      showToast("SECTOR RESET");
+    });
+
+    document.getElementById('nextSectorBtn').addEventListener('click', () => {
+      closeModal('victoryModal');
+      state.sector++;
+      saveState();
+      generateBoard(state.sector);
+      showToast(`WARPING TO SECTOR ${state.sector}...`);
+    });
+
+    document.getElementById('retrySectorBtn').addEventListener('click', () => {
+      closeModal('defeatModal');
+      state.score = Math.max(0, state.score - 300);
+      generateBoard(state.sector);
+      showToast("RETRYING SECTOR");
+    });
+
+    /******************************************************************
+     * 8. CANVAS NEBULA STARFIELD
+     ******************************************************************/
+    const bgCanvas = document.getElementById('nebulaCanvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    let stars = [];
+
+    function initStars() {
+      bgCanvas.width = window.innerWidth;
+      bgCanvas.height = window.innerHeight;
+      stars = [];
+      for (let i = 0; i < 70; i++) {
+        stars.push({
+          x: Math.random() * bgCanvas.width,
+          y: Math.random() * bgCanvas.height,
+          r: Math.random() * 1.5 + 0.5,
+          alpha: Math.random(),
+          speed: Math.random() * 0.02 + 0.005
+        });
+      }
+    }
+    window.addEventListener('resize', initStars);
+    initStars();
+
+    function renderBg() {
+      bgCtx.fillStyle = '#060814';
+      bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+      stars.forEach(s => {
+        s.alpha += s.speed;
+        if (s.alpha > 1 || s.alpha < 0.1) s.speed = -s.speed;
+        bgCtx.fillStyle = `rgba(220, 235, 255, ${Math.abs(s.alpha)})`;
+        bgCtx.beginPath();
+        bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        bgCtx.fill();
+      });
+      requestAnimationFrame(renderBg);
+    }
+    requestAnimationFrame(renderBg);
+
+    /******************************************************************
+     * 9. INITIALIZE
+     ******************************************************************/
+    loadState();
+    generateBoard(state.sector);
+  </script>
+</body>
+</html>
