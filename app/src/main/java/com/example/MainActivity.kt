@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.ui.theme.MyApplicationTheme
-import java.io.File
 
 class MainActivity : ComponentActivity() {
   private var webView: WebView? = null
@@ -33,27 +32,11 @@ class MainActivity : ComponentActivity() {
     )
     enableEdgeToEdge()
 
-    // Clean up any incomplete HTTP Cache folder created manually by earlier runs
-    // to allow Chromium SimpleCache to initialize cleanly
-    try {
-      val httpCache = File(cacheDir, "WebView/Default/HTTP Cache")
-      if (httpCache.exists()) {
-        val fakeIndex = File(httpCache, "fake-index")
-        val realIndex = File(httpCache, "the-real-index")
-        if (!fakeIndex.exists() && !realIndex.exists()) {
-          httpCache.deleteRecursively()
-        }
-      }
-    } catch (e: Exception) {
-      Log.w("MainActivity", "Cache check: ${e.message}")
-    }
-
     val view = WebView(this).apply {
       layoutParams = ViewGroup.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT
       )
-      setLayerType(View.LAYER_TYPE_HARDWARE, null)
       setBackgroundColor(0xFF060814.toInt())
 
       settings.apply {
@@ -61,7 +44,7 @@ class MainActivity : ComponentActivity() {
         domStorageEnabled = true
         databaseEnabled = true
         mediaPlaybackRequiresUserGesture = false
-        cacheMode = WebSettings.LOAD_DEFAULT
+        cacheMode = WebSettings.LOAD_NO_CACHE
         allowFileAccess = true
         allowContentAccess = true
       }
@@ -83,8 +66,30 @@ class MainActivity : ComponentActivity() {
     setContentView(view)
   }
 
+  override fun onPause() {
+    super.onPause()
+    webView?.onPause()
+    webView?.pauseTimers()
+  }
+
+  override fun onResume() {
+    super.onResume()
+    webView?.onResume()
+    webView?.resumeTimers()
+  }
+
+  override fun onStop() {
+    super.onStop()
+    webView?.onPause()
+    webView?.pauseTimers()
+  }
+
   override fun onDestroy() {
-    webView?.destroy()
+    webView?.let {
+      it.loadUrl("about:blank")
+      it.onPause()
+      it.destroy()
+    }
     webView = null
     super.onDestroy()
   }

@@ -422,7 +422,7 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       cursor: pointer;
       transform-origin: center center;
-      transition: transform 0.14s ease-out, opacity 0.14s ease-out;
+      transition: transform 0.18s ease-out, opacity 0.18s ease-out;
     }
 
     .relic-tile::before {
@@ -603,13 +603,13 @@
     }
 
     .tray-tile.matching-burst {
-      animation: matchDissolve 0.18s forwards ease-out;
+      animation: matchDissolve 0.24s forwards ease-out;
     }
 
     @keyframes matchDissolve {
       0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.22); opacity: 0.9; box-shadow: 0 0 16px var(--neon-cyan); }
-      100% { transform: scale(0.2); opacity: 0; }
+      40% { transform: scale(1.25); opacity: 0.95; box-shadow: 0 0 18px var(--neon-cyan); }
+      100% { transform: scale(0.15); opacity: 0; }
     }
 
     .particle-canvas {
@@ -1556,9 +1556,40 @@
         loop();
         this.bgmTimer = setInterval(loop, 3800);
       }
+
+      stopBgm() {
+        if (this.bgmTimer) {
+          clearInterval(this.bgmTimer);
+          this.bgmTimer = null;
+        }
+      }
+
+      suspend() {
+        if (this.ctx && this.ctx.state === 'running') {
+          this.ctx.suspend().catch(() => {});
+        }
+      }
+
+      resume() {
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      }
     }
 
     const sound = new CosmicAudioSynthesizer();
+
+    // Auto-pause sound when user exits or minimizes the app
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        sound.suspend();
+      } else {
+        sound.resume();
+      }
+    });
+    window.addEventListener('pagehide', () => sound.suspend());
+    window.addEventListener('blur', () => sound.suspend());
+    window.addEventListener('focus', () => sound.resume());
 
     /******************************************************************
      * 2. STATE & PERSISTENCE
@@ -2029,12 +2060,12 @@
       state.boardTiles.splice(idx, 1);
       recalculateOverlaps();
 
-      // Fast, snappy kinetic fly-in animation to target slot
+      // Medium-fast, fluid kinetic fly-in animation to target slot
       const targetSlot = document.querySelector(`.tray-slot[data-slot="${state.trayTiles.length}"]`);
       const srcRect = tile.element.getBoundingClientRect();
       const dstRect = targetSlot.getBoundingClientRect();
 
-      tile.element.style.transition = 'transform 0.13s cubic-bezier(0.2, 0.9, 0.3, 1.15)';
+      tile.element.style.transition = 'transform 0.20s cubic-bezier(0.25, 1, 0.5, 1)';
       tile.element.style.transform = `translate(${dstRect.left - srcRect.left}px, ${dstRect.top - srcRect.top}px) scale(0.95)`;
       tile.element.style.zIndex = '999';
 
@@ -2044,7 +2075,7 @@
         renderTray();
         state.isBusy = false;
         resolveMatches();
-      }, 130);
+      }, 200);
     }
 
     function renderTray() {
@@ -2114,7 +2145,7 @@
           renderTray();
           state.isBusy = false;
           checkWin();
-        }, 170);
+        }, 240);
 
       } else {
         if (state.trayTiles.length >= 5) {
