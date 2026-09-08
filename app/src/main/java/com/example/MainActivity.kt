@@ -27,7 +27,10 @@ class MainActivity : ComponentActivity() {
   @SuppressLint("SetJavaScriptEnabled")
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    window.clearFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
+    window.setFlags(
+      WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+      WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+    )
     enableEdgeToEdge()
 
     // Clean up any incomplete HTTP Cache folder created manually by earlier runs
@@ -50,7 +53,7 @@ class MainActivity : ComponentActivity() {
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT
       )
-      setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+      setLayerType(View.LAYER_TYPE_HARDWARE, null)
       setBackgroundColor(0xFF060814.toInt())
 
       settings.apply {
