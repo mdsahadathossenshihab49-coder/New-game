@@ -4,7 +4,6 @@
   "description": "Cyber Relics Match - 3D Layered Tile Match-3 Android Native APK with Capacitor and GitHub Actions CI/CD",
   "main": "index.html",
   "scripts": {
-    "build": "mkdir -p www && cp index.html www/",
     "cap:add": "cap add android",
     "cap:sync": "cap sync android",
     "cap:build": "cd android && ./gradlew assembleDebug"

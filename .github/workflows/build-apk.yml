@@ -32,17 +32,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: 📦 Install NPM & Capacitor Dependencies
         run: |
           npm install
-
-      - name: 🌐 Package Web Assets for Capacitor
-        run: |
-          mkdir -p www
-          cp index.html www/
-          ls -la www/
 
       - name: ⚙️ Initialize and Synchronize Capacitor Android Platform
         run: |
@@ -72,5 +65,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CyberRelics-Match-Debug-APK
-          path: ${{ steps.find_apk.outputs.apk_path }}
+          path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
