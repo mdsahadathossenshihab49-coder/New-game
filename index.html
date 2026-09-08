@@ -3,14 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Cyber-Celestial Relics: Tile Match-3</title>
+  <title>Cyber Relics Match</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Firebase App, Auth and Firestore SDKs (Compat v10 for resilient cross-origin & offline WebView operation) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     :root {
       --bg-space: #060814;
-      --panel-bg: rgba(13, 17, 34, 0.85);
+      --panel-bg: rgba(13, 17, 34, 0.88);
       --neon-cyan: #00f0ff;
       --neon-magenta: #e056fd;
       --neon-amber: #fbc531;
@@ -69,48 +73,294 @@
       overflow: hidden;
     }
 
-    /* Top HUD Header */
-    .hud-header {
-      padding: 10px 14px 6px;
+    /* Common App Header */
+    .app-header {
+      padding: 10px 14px 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: linear-gradient(180deg, rgba(13, 17, 34, 0.9) 0%, rgba(13, 17, 34, 0.3) 100%);
+      background: linear-gradient(180deg, rgba(13, 17, 34, 0.95) 0%, rgba(13, 17, 34, 0.4) 100%);
       border-bottom: 1px solid rgba(0, 240, 255, 0.15);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
+      z-index: 50;
     }
 
-    .hud-sector-badge {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .hud-tag {
-      font-family: var(--font-title);
-      font-size: 9px;
-      letter-spacing: 1.5px;
-      color: var(--neon-cyan);
-      text-transform: uppercase;
-      opacity: 0.85;
-    }
-
-    .hud-sector-num {
-      font-family: var(--font-title);
-      font-size: 17px;
-      font-weight: 900;
-      color: #ffffff;
-      text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+    .header-left, .header-right {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+    }
+
+    .coin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(251, 197, 49, 0.12);
+      border: 1px solid var(--neon-amber);
+      color: var(--neon-amber);
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-family: var(--font-title);
+      font-size: 13px;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(251, 197, 49, 0.6);
+    }
+
+    .level-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      padding: 4px 9px;
+      border-radius: 14px;
+      font-family: var(--font-title);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--neon-cyan);
+      cursor: pointer;
+      font-size: 17px;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      background: rgba(0, 240, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    /* Screen Views */
+    .view-screen {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ----------------------------------------------------
+       1. HOME / MAIN MENU SCREEN
+    ----------------------------------------------------- */
+    #homeScreen {
+      padding: 16px 20px 24px;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
+    }
+
+    .home-hero {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .holo-emblem {
+      width: 110px;
+      height: 110px;
+      position: relative;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .holo-emblem svg {
+      width: 100%;
+      height: 100%;
+      animation: emblemRotate 20s linear infinite;
+      filter: drop-shadow(0 0 16px var(--neon-cyan));
+    }
+
+    @keyframes emblemRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .holo-inner-glow {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.8) 0%, rgba(224, 86, 253, 0.3) 60%, transparent 80%);
+      animation: innerPulse 2.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes innerPulse {
+      from { transform: scale(0.85); opacity: 0.7; }
+      to { transform: scale(1.15); opacity: 1; }
+    }
+
+    .game-main-title {
+      font-family: var(--font-title);
+      font-size: 27px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 0%, #00f0ff 50%, #e056fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+      margin-bottom: 6px;
+    }
+
+    .game-subtitle {
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: #8fa0dd;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .home-stats-card {
+      width: 100%;
+      background: rgba(13, 17, 34, 0.75);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+      margin: 14px 0;
+    }
+
+    .home-stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .home-stat-label {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #8fa0dd;
+      text-transform: uppercase;
+    }
+
+    .home-stat-val {
+      font-family: var(--font-title);
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 2px;
+    }
+
+    .home-action-group {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .btn-play-level {
+      width: 100%;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #00f0ff 0%, #0088ff 100%);
+      border: none;
+      border-radius: 14px;
+      font-family: var(--font-title);
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: #040817;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-play-level:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.7);
+    }
+
+    .btn-daily-challenge {
+      width: 100%;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, rgba(20, 28, 54, 0.9) 0%, rgba(10, 14, 30, 0.95) 100%);
+      border: 1px solid var(--neon-emerald);
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.25);
+    }
+
+    .btn-daily-challenge.completed {
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: none;
+      opacity: 0.7;
+    }
+
+    .btn-daily-challenge:not(.completed):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 25px var(--neon-emerald);
+      background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(10, 14, 30, 0.95) 100%);
+    }
+
+    .daily-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .daily-badge-pill {
+      background: rgba(0, 255, 136, 0.15);
+      border: 1px solid var(--neon-emerald);
+      color: var(--neon-emerald);
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-family: var(--font-title);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* ----------------------------------------------------
+       2. GAMEPLAY SCREEN
+    ----------------------------------------------------- */
+    #gameplayScreen {
+      display: none;
+    }
+
+    .game-subbar {
+      padding: 4px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #a0b2eb;
+      background: rgba(8, 11, 24, 0.5);
     }
 
     .hard-badge {
       background: linear-gradient(135deg, #ff3838, #c23616);
       color: #fff;
       font-size: 9px;
-      padding: 2px 5px;
+      padding: 2px 6px;
       border-radius: 4px;
       letter-spacing: 1px;
       animation: hardPulse 1.5s infinite alternate;
@@ -119,96 +369,6 @@
     @keyframes hardPulse {
       from { box-shadow: 0 0 4px #ff3838; }
       to { box-shadow: 0 0 12px #ff3838; }
-    }
-
-    .hud-stats {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .hud-stat-box {
-      text-align: right;
-    }
-
-    .hud-stat-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #8fa0dd;
-    }
-
-    .hud-stat-val {
-      font-family: var(--font-title);
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .coin-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(251, 197, 49, 0.12);
-      border: 1px solid var(--neon-amber);
-      color: var(--neon-amber);
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-family: var(--font-title);
-      font-size: 12px;
-      font-weight: 700;
-      text-shadow: 0 0 6px var(--neon-amber);
-    }
-
-    .hud-btn {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(0, 240, 255, 0.3);
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--neon-cyan);
-      cursor: pointer;
-      font-size: 18px;
-      transition: all 0.2s ease;
-    }
-
-    .hud-btn:hover {
-      background: rgba(0, 240, 255, 0.2);
-      transform: scale(1.05);
-    }
-
-    /* Sub HUD Bar */
-    .hud-subbar {
-      padding: 4px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      font-weight: 600;
-      color: #a0b2eb;
-    }
-
-    .daily-btn {
-      background: rgba(0, 255, 136, 0.12);
-      border: 1px solid var(--neon-emerald);
-      color: var(--neon-emerald);
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-family: var(--font-title);
-      font-size: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.2s;
-    }
-
-    .daily-btn:hover {
-      background: rgba(0, 255, 136, 0.25);
-      box-shadow: 0 0 10px var(--neon-emerald);
     }
 
     /* Tutorial Banner */
@@ -231,7 +391,7 @@
       to { border-color: var(--neon-magenta); box-shadow: 0 0 12px rgba(224,86,253,0.5); }
     }
 
-    /* Main Board Stage */
+    /* Board Stage */
     .board-container {
       flex: 1;
       position: relative;
@@ -286,7 +446,7 @@
     .relic-tile[data-type="bio-spore"] { border-color: rgba(0, 255, 136, 0.5); --accent: var(--neon-emerald); }
     .relic-tile[data-type="astral-monolith"] { border-color: rgba(155, 89, 182, 0.5); --accent: var(--neon-violet); }
     .relic-tile[data-type="hyper-tesseract"] { border-color: rgba(251, 197, 49, 0.5); --accent: var(--neon-amber); }
-    .relic-tile[data-type="dark-matter-tear"] { border-color: rgba(75, 123, 236, 0.5); --accent: var(--neon-indigo); }
+    .relic-tile[data-type="dark-matter-rift"] { border-color: rgba(75, 123, 236, 0.5); --accent: var(--neon-indigo); }
 
     .relic-tile.active-tile:hover {
       transform: translateY(-4px) scale(1.05);
@@ -294,14 +454,14 @@
       z-index: 100 !important;
     }
 
-    .relic-tile.tutorial-focus {
+    .relic-tile.tutorial-highlight {
       animation: tutorialPulse 1.2s infinite alternate ease-in-out;
-      border-color: #fff !important;
+      border-color: #ffffff !important;
     }
 
     @keyframes tutorialPulse {
       from { transform: scale(1); box-shadow: 0 0 8px var(--neon-cyan); }
-      to { transform: scale(1.08); box-shadow: 0 0 20px var(--neon-cyan), 0 0 30px #fff; }
+      to { transform: scale(1.08); box-shadow: 0 0 20px var(--neon-cyan), 0 0 30px #ffffff; }
     }
 
     .relic-tile.blocked-tile {
@@ -374,7 +534,7 @@
       gap: 2px;
     }
 
-    /* Bottom Stasis Containment Tray (Holding Bar: Exactly 5 Slots) */
+    /* Bottom Stasis Tray (Exactly 5 Slots) */
     .tray-wrapper {
       padding: 10px 14px 18px;
       background: linear-gradient(0deg, rgba(8, 10, 22, 0.98) 0%, rgba(13, 17, 34, 0.9) 100%);
@@ -672,6 +832,90 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    .user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 4px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: var(--font-title);
+      font-size: 11px;
+      color: #e0e6ff;
+      transition: all 0.2s;
+    }
+
+    .user-chip:hover {
+      background: rgba(0, 240, 255, 0.16);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+    }
+
+    .auth-input-group {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .auth-input-label {
+      font-size: 11px;
+      color: #8fa0dd;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      display: block;
+      font-family: var(--font-title);
+    }
+
+    .auth-input-field {
+      width: 100%;
+      background: rgba(4, 7, 18, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .auth-input-field:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      background: rgba(4, 7, 18, 0.7);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .auth-tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: #8fa0dd;
+      font-family: var(--font-title);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .auth-tab-btn.active {
+      background: rgba(0, 240, 255, 0.18);
+      color: var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+    }
+
     .svg-defs {
       position: absolute;
       width: 0;
@@ -685,77 +929,145 @@
   <canvas id="nebulaCanvas" class="nebula-canvas"></canvas>
 
   <main class="game-viewport">
-    <header class="hud-header">
-      <div class="hud-sector-badge">
-        <span class="hud-tag">SECTOR</span>
-        <span class="hud-sector-num">
-          <span id="hudSectorNum">01</span>
-          <span id="hardBadge" class="hard-badge" style="display:none;">HARD</span>
-        </span>
+
+    <!-- 1. HOME / MAIN MENU SCREEN -->
+    <section id="homeScreen" class="view-screen">
+      <header class="app-header" style="width:100%;">
+        <div class="header-left">
+          <div class="coin-badge">
+            <span>🪙</span>
+            <span class="hudCoins">300</span>
+          </div>
+          <div class="level-badge">
+            <span>SECTOR</span>
+            <span id="homeTopLevel">01</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <div id="homeUserChip" class="user-chip" title="Account / Cloud Profile">
+            <span>👤</span>
+            <span id="homeUserLabel">Guest</span>
+          </div>
+          <button class="icon-btn openSettingsBtn" title="Settings" aria-label="Settings">⚙️</button>
+        </div>
+      </header>
+
+      <div class="home-hero">
+        <div class="holo-emblem">
+          <div class="holo-inner-glow"></div>
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" fill="none" stroke="url(#gradPrismTop)" stroke-width="2" stroke-dasharray="8 6" />
+            <polygon points="50,15 80,50 50,85 20,50" fill="none" stroke="#e056fd" stroke-width="2.5" />
+            <circle cx="50" cy="50" r="16" fill="none" stroke="#00f0ff" stroke-width="3" />
+          </svg>
+        </div>
+        <h1 class="game-main-title">CYBER RELICS<br>MATCH</h1>
+        <div class="game-subtitle">CELESTIAL STASIS ALGORITHM</div>
       </div>
 
-      <div class="hud-stats">
-        <div class="coin-badge">
-          <span>🪙</span>
-          <span id="hudCoins">300</span>
+      <div class="home-stats-card">
+        <div class="home-stat-item">
+          <span class="home-stat-label">HIGH SCORE</span>
+          <span id="homeHighScore" class="home-stat-val">0</span>
         </div>
-        <div class="hud-stat-box">
-          <div class="hud-stat-label">SCORE</div>
-          <div id="hudScore" class="hud-stat-val">0</div>
+        <div class="home-stat-item">
+          <span class="home-stat-label">MAX SECTOR</span>
+          <span id="homeMaxSector" class="home-stat-val">01</span>
         </div>
       </div>
 
-      <button id="settingsBtn" class="hud-btn" title="Settings" aria-label="Settings">⚙️</button>
-    </header>
+      <div class="home-action-group">
+        <button id="btnPlayLevel" class="btn-play-level">
+          <span>⚡ PLAY SECTOR <span id="homePlayLevelNum">1</span></span>
+        </button>
 
-    <div class="hud-subbar">
-      <div>RELICS: <span id="hudRelicsLeft" style="color:#fff; font-weight:700;">--</span></div>
-      <button id="dailyBtn" class="daily-btn">
-        <span>📅</span> DAILY (+25🪙)
-      </button>
-      <div id="multiplierBadge" style="color:var(--neon-amber); font-family:var(--font-title); font-size:11px;">x1 MULTI</div>
-    </div>
-
-    <div id="tutorialBanner" class="tutorial-banner" style="display:none;">
-      <span>💡</span>
-      <span id="tutorialText">TUTORIAL: Tap glowing unlocked relics to place them in the 5-slot tray. Group 3 identical relics to match!</span>
-    </div>
-
-    <section class="board-container">
-      <div id="boardStage" class="board-stage"></div>
-      <canvas id="particleCanvas" class="particle-canvas"></canvas>
+        <button id="btnDailyProtocol" class="btn-daily-challenge">
+          <div class="daily-title-row">
+            <span style="font-size:20px;">📅</span>
+            <div>
+              <div style="font-family:var(--font-title); font-size:13px; font-weight:700; color:#fff;">DAILY PROTOCOL</div>
+              <div id="dailyStatusSubtext" style="font-size:11px; color:#8fa0dd;">Harmonize daily sector &bull; +25 🪙</div>
+            </div>
+          </div>
+          <div id="dailyRewardBadge" class="daily-badge-pill">+25 🪙</div>
+        </button>
+      </div>
     </section>
 
-    <!-- Boosters Dock -->
-    <div class="booster-dock">
-      <button id="boosterUndo" class="booster-btn">
-        <div class="booster-title">↩️ UNDO</div>
-        <div class="booster-cost">100 🪙</div>
-      </button>
-      <button id="boosterShuffle" class="booster-btn">
-        <div class="booster-title">🔀 SHUFFLE</div>
-        <div class="booster-cost">150 🪙</div>
-      </button>
-      <button id="boosterAuto" class="booster-btn">
-        <div class="booster-title">⚡ AUTO-3</div>
-        <div class="booster-cost">200 🪙</div>
-      </button>
-    </div>
+    <!-- 2. GAMEPLAY SCREEN -->
+    <section id="gameplayScreen" class="view-screen">
+      <header class="app-header">
+        <div class="header-left">
+          <button id="btnReturnHome" class="icon-btn" title="Home Menu" aria-label="Home Menu">🏠</button>
+          <div style="display:flex; flex-direction:column;">
+            <span style="font-size:9px; font-family:var(--font-title); letter-spacing:1px; color:var(--neon-cyan);">SECTOR</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span id="gameSectorNum" style="font-family:var(--font-title); font-size:16px; font-weight:900; color:#fff;">01</span>
+              <span id="hardBadge" class="hard-badge" style="display:none;">HARD</span>
+            </div>
+          </div>
+        </div>
 
-    <!-- 5-Slot Holding Tray -->
-    <footer class="tray-wrapper">
-      <div class="tray-caption">
-        <span class="tray-indicator-dot"></span>
-        STASIS TRAY &bull; 5 SLOTS
+        <div class="header-right">
+          <div class="coin-badge">
+            <span>🪙</span>
+            <span class="hudCoins">300</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:9px; text-transform:uppercase; color:#8fa0dd;">SCORE</div>
+            <div id="hudScore" style="font-family:var(--font-title); font-size:14px; font-weight:700; color:#fff;">0</div>
+          </div>
+          <button class="icon-btn openSettingsBtn" title="Settings" aria-label="Settings">⚙️</button>
+        </div>
+      </header>
+
+      <div class="game-subbar">
+        <div>RELICS: <span id="hudRelicsLeft" style="color:#fff; font-weight:700;">--</span></div>
+        <div id="dailyModeBanner" style="display:none; color:var(--neon-emerald); font-family:var(--font-title); font-size:11px;">DAILY PROTOCOL ACTIVE</div>
+        <div id="multiplierBadge" style="color:var(--neon-amber); font-family:var(--font-title); font-size:11px;">x1 MULTI</div>
       </div>
-      <div id="trayDock" class="tray-dock">
-        <div class="tray-slot" data-slot="0"></div>
-        <div class="tray-slot" data-slot="1"></div>
-        <div class="tray-slot" data-slot="2"></div>
-        <div class="tray-slot" data-slot="3"></div>
-        <div class="tray-slot" data-slot="4"></div>
+
+      <div id="tutorialBanner" class="tutorial-banner" style="display:none;">
+        <span>💡</span>
+        <span id="tutorialText">TUTORIAL: Tap 3 matching glowing relics to harmonize and clear them from the 5-slot tray!</span>
       </div>
-    </footer>
+
+      <section class="board-container">
+        <div id="boardStage" class="board-stage"></div>
+        <canvas id="particleCanvas" class="particle-canvas"></canvas>
+      </section>
+
+      <!-- Boosters Action Dock -->
+      <div class="booster-dock">
+        <button id="boosterUndo" class="booster-btn">
+          <div class="booster-title">↩️ UNDO</div>
+          <div class="booster-cost">100 🪙</div>
+        </button>
+        <button id="boosterShuffle" class="booster-btn">
+          <div class="booster-title">🔀 SHUFFLE</div>
+          <div class="booster-cost">150 🪙</div>
+        </button>
+        <button id="boosterAuto" class="booster-btn">
+          <div class="booster-title">⚡ AUTO-3</div>
+          <div class="booster-cost">200 🪙</div>
+        </button>
+      </div>
+
+      <!-- 5-Slot Bottom Holding Tray -->
+      <footer class="tray-wrapper">
+        <div class="tray-caption">
+          <span class="tray-indicator-dot"></span>
+          STASIS TRAY &bull; 5 SLOTS
+        </div>
+        <div id="trayDock" class="tray-dock">
+          <div class="tray-slot" data-slot="0"></div>
+          <div class="tray-slot" data-slot="1"></div>
+          <div class="tray-slot" data-slot="2"></div>
+          <div class="tray-slot" data-slot="3"></div>
+          <div class="tray-slot" data-slot="4"></div>
+        </div>
+      </footer>
+    </section>
 
     <div id="cyberToast" class="cyber-toast">MATCH-3!</div>
 
@@ -763,7 +1075,7 @@
     <div id="settingsModal" class="modal-overlay">
       <div class="modal-window">
         <button id="closeSettingsBtn" class="modal-close-btn">&times;</button>
-        <h2 class="modal-title">⚙️ SYSTEM CONTROL</h2>
+        <h2 class="modal-title">⚙️ SYSTEM CONFIG</h2>
 
         <div class="setting-row">
           <div>
@@ -787,14 +1099,91 @@
           </label>
         </div>
 
-        <button id="restartSectorBtn" class="cyber-btn cyber-btn-secondary">
+        <button id="btnRestartCurrentLevel" class="cyber-btn cyber-btn-secondary">
           🔄 RESTART SECTOR
         </button>
 
-        <div style="margin-top:16px; padding:12px; background:rgba(0,0,0,0.4); border-radius:10px; font-size:12px;">
-          <div style="color:#8fa0dd; margin-bottom:4px;">PROFILE STATUS</div>
-          <div id="authStatusText" style="color:var(--neon-emerald); font-weight:700;">Local Guest &bull; Offline Active</div>
-          <div style="color:#687fb6; font-size:11px; margin-top:2px;">Coins & Progress automatically saved to storage.</div>
+        <button id="btnModalReturnHome" class="cyber-btn cyber-btn-secondary">
+          🏠 RETURN TO MAIN MENU
+        </button>
+
+        <div style="margin-top:14px; padding:12px; background:rgba(0,0,0,0.4); border-radius:10px; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div style="color:#8fa0dd;">PROFILE / CLOUD SYNC</div>
+            <div id="settingsProfileType" style="color:var(--neon-emerald); font-weight:700;">Guest Mode</div>
+          </div>
+          <div id="settingsProfileDesc" style="color:#687fb6; font-size:11px;">Playing offline as guest. Link email or sign in to sync coins & progression.</div>
+          <button id="btnOpenAuthModal" class="cyber-btn cyber-btn-primary" style="margin-top:10px; padding:8px; font-size:11px;">
+            🔐 ACCOUNT & CLOUD SYNC
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth / Firebase Cloud Modal -->
+    <div id="authModal" class="modal-overlay">
+      <div class="modal-window">
+        <button class="modal-close-btn" id="closeAuthBtn">&times;</button>
+        <h2 class="modal-title"><span>🔐</span> CLOUD PROFILE</h2>
+        <p class="modal-desc" id="authSubtitle">Connect Firebase Database to synchronize your relics, high score, and coins across devices.</p>
+
+        <!-- If currently authenticated as user -->
+        <div id="authenticatedView" style="display:none; text-align:center; padding:10px 0;">
+          <div style="font-size:36px; margin-bottom:6px;">👤</div>
+          <div id="authUserEmail" style="font-family:var(--font-title); font-size:14px; color:var(--neon-cyan); margin-bottom:4px; word-break:break-all;">user@cosmos.io</div>
+          <div style="font-size:11px; color:var(--neon-emerald); font-weight:700; margin-bottom:14px;">● CLOUD DATABASE CONNECTED</div>
+          
+          <div style="background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.25); border-radius:12px; padding:10px; margin-bottom:14px; font-size:12px; text-align:left;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="color:#8fa0dd;">Cloud Level:</span>
+              <span id="cloudStatusLevel" style="font-family:var(--font-title); color:#fff;">--</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:#8fa0dd;">Cloud Coins:</span>
+              <span id="cloudStatusCoins" style="font-family:var(--font-title); color:var(--neon-amber);">--</span>
+            </div>
+          </div>
+
+          <button id="btnManualSync" class="cyber-btn cyber-btn-primary">
+            ☁️ SYNC WITH CLOUD NOW
+          </button>
+          <button id="btnSignOut" class="cyber-btn cyber-btn-danger" style="margin-top:8px;">
+            LOGOUT (SWITCH TO GUEST)
+          </button>
+        </div>
+
+        <!-- If unauthenticated / Guest login forms -->
+        <div id="unauthenticatedView">
+          <div class="auth-tabs">
+            <button id="tabLogin" class="auth-tab-btn active">SIGN IN</button>
+            <button id="tabRegister" class="auth-tab-btn">REGISTER</button>
+          </div>
+
+          <form id="authForm" onsubmit="return false;">
+            <div class="auth-input-group">
+              <label class="auth-input-label" for="authEmailInput">Cosmic Email</label>
+              <input type="email" id="authEmailInput" class="auth-input-field" placeholder="pilot@celestial.io" autocomplete="email" required>
+            </div>
+
+            <div class="auth-input-group">
+              <label class="auth-input-label" for="authPasswordInput">Access Key / Password</label>
+              <input type="password" id="authPasswordInput" class="auth-input-field" placeholder="••••••••" autocomplete="current-password" required minlength="6">
+            </div>
+
+            <button type="submit" id="btnAuthSubmit" class="cyber-btn cyber-btn-primary">
+              SIGN IN
+            </button>
+          </form>
+
+          <div style="display:flex; align-items:center; gap:8px; margin:14px 0 10px; color:#4a5c88; font-size:11px;">
+            <div style="flex:1; height:1px; background:rgba(255,255,255,0.1);"></div>
+            <span>OR CONTINUE WITHOUT ACCOUNT</span>
+            <div style="flex:1; height:1px; background:rgba(255,255,255,0.1);"></div>
+          </div>
+
+          <button id="btnContinueGuest" class="cyber-btn cyber-btn-secondary" style="margin-top:0;">
+            🎮 CONTINUE IN GUEST MODE
+          </button>
         </div>
       </div>
     </div>
@@ -804,16 +1193,21 @@
       <div class="modal-window" style="text-align:center;">
         <div style="font-size:36px; margin-bottom:8px;">✨</div>
         <h2 class="modal-title" style="justify-content:center; color:var(--neon-cyan);">SECTOR PURIFIED!</h2>
-        <p class="modal-desc">All relics harmonized and containment stasis preserved.</p>
+        <p class="modal-desc" id="victoryDesc">All relics harmonized and containment stasis preserved.</p>
 
         <div style="background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.3); border-radius:12px; padding:12px; margin-bottom:16px;">
-          <div style="font-size:12px; color:#8fa0dd;">REWARDS</div>
-          <div id="victoryBonusText" style="font-family:var(--font-title); font-size:20px; font-weight:700; color:var(--neon-amber);">+1,000 PTS &bull; +50 🪙</div>
-          <div id="levelBonusBanner" style="display:none; color:#00ff88; font-size:12px; font-weight:bold; margin-top:4px;">🎉 10-LEVEL MILESTONE: +100 BONUS COINS!</div>
+          <div style="font-size:12px; color:#8fa0dd;">REWARD GRANTED</div>
+          <div id="victoryRewardText" style="font-family:var(--font-title); font-size:18px; font-weight:700; color:var(--neon-amber);">+1,000 PTS</div>
+          <div id="milestoneRewardBanner" style="display:none; color:var(--neon-emerald); font-family:var(--font-title); font-size:13px; font-weight:bold; margin-top:6px;">
+            🎉 10-LEVEL MILESTONE: +100 COINS!
+          </div>
         </div>
 
         <button id="nextSectorBtn" class="cyber-btn cyber-btn-primary">
-          ADVANCE TO NEXT SECTOR ⚡
+          ADVANCE PROTOCOL ⚡
+        </button>
+        <button id="victoryHomeBtn" class="cyber-btn cyber-btn-secondary">
+          MAIN MENU 🏠
         </button>
       </div>
     </div>
@@ -833,11 +1227,14 @@
         <button id="retrySectorBtn" class="cyber-btn cyber-btn-danger">
           PURGE & RETRY 🔄
         </button>
+        <button id="defeatHomeBtn" class="cyber-btn cyber-btn-secondary">
+          RETURN TO HOME 🏠
+        </button>
       </div>
     </div>
   </main>
 
-  <!-- 8 Vector SVG Definitions (NO Fruit Emojis) -->
+  <!-- 8 Vector SVG Relic Definitions -->
   <svg class="svg-defs" aria-hidden="true">
     <defs>
       <filter id="cyberGlow" x="-20%" y="-20%" width="140%" height="140%">
@@ -908,7 +1305,7 @@
         <circle cx="50" cy="62" r="3" fill="#ff3838" />
       </g>
 
-      <!-- 5. BIO-SPORE -->
+      <!-- 5. BIO-SPORE CORE -->
       <g id="svg-bio-spore">
         <linearGradient id="gradBio" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#a8ff78" />
@@ -957,16 +1354,16 @@
         <circle cx="50" cy="52" r="4" fill="#ffffff" />
       </g>
 
-      <!-- 8. DARK MATTER TEAR -->
-      <g id="svg-dark-matter-tear">
-        <radialGradient id="gradTear" cx="50%" cy="50%" r="50%">
+      <!-- 8. DARK MATTER RIFT -->
+      <g id="svg-dark-matter-rift">
+        <radialGradient id="gradRift" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="#ffffff" />
           <stop offset="25%" stop-color="#00d2d3" />
           <stop offset="60%" stop-color="#3742fa" />
           <stop offset="100%" stop-color="#0c0e2a" />
         </radialGradient>
         <path d="M50 8 C66 32 76 44 76 52 C76 66 64 88 50 92 C36 88 24 66 24 52 C24 44 34 32 50 8 Z" 
-              fill="url(#gradTear)" stroke="#70a1ff" stroke-width="2" />
+              fill="url(#gradRift)" stroke="#70a1ff" stroke-width="2" />
         <path d="M50 18 L46 36 L56 46 L42 62 L52 82" 
               fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
         <circle cx="56" cy="46" r="3" fill="#ffffff" filter="url(#cyberGlow)" />
@@ -994,7 +1391,7 @@
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
           this.ctx = new AudioCtx();
           const master = this.ctx.createGain();
-          master.gain.setValueAtTime(0.7, this.ctx.currentTime);
+          master.gain.setValueAtTime(0.75, this.ctx.currentTime);
           master.connect(this.ctx.destination);
 
           this.sfxGain = this.ctx.createGain();
@@ -1007,6 +1404,23 @@
         if (this.ctx.state === 'suspended') {
           this.ctx.resume();
         }
+      }
+
+      playButtonClick() {
+        if (!this.isSfxEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(620, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+        g.gain.setValueAtTime(0.2, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(g);
+        g.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.12);
       }
 
       playTilePick() {
@@ -1072,7 +1486,7 @@
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.setValueAtTime(160, now);
         osc.frequency.exponentialRampToValueAtTime(35, now + 0.6);
         g.gain.setValueAtTime(0.4, now);
         g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
@@ -1152,7 +1566,7 @@
     const sound = new CosmicAudioSynthesizer();
 
     /******************************************************************
-     * 2. GAME STATE & RELIC TYPES
+     * 2. STATE & PERSISTENCE
      ******************************************************************/
     const RELICS = [
       { id: 'void-singularity', color: '#e056fd' },
@@ -1162,50 +1576,276 @@
       { id: 'bio-spore', color: '#00ff88' },
       { id: 'astral-monolith', color: '#9b59b6' },
       { id: 'hyper-tesseract', color: '#fbc531' },
-      { id: 'dark-matter-tear', color: '#4b7bec' }
+      { id: 'dark-matter-rift', color: '#4b7bec' }
     ];
 
     const state = {
-      sector: 1,
-      score: 0,
+      currentLevel: 1,
+      maxUnlockedLevel: 1,
       coins: 300,
+      score: 0,
+      highScore: 0,
       multiplier: 1,
       lastMatchTime: 0,
       boardTiles: [],
       trayTiles: [],
       moveHistory: [],
-      lastDailyDate: null,
+      lastDailyCompletedTimestamp: 0,
       isDailyMode: false,
-      isBusy: false
+      isBusy: false,
+      currentUser: null,
+      isGuest: true,
+      authMode: 'login', // 'login' | 'register'
+      isSyncing: false
     };
 
-    function loadState() {
+    /******************************************************************
+     * 2.5 FIREBASE AUTHENTICATION & CLOUD FIRESTORE DATABASE
+     ******************************************************************/
+    let fbAuth = null;
+    let fbDb = null;
+    let fbInitialized = false;
+
+    function initFirebase() {
+      if (typeof firebase === 'undefined') {
+        console.warn("Firebase SDK script not loaded yet. Running in offline Guest mode.");
+        return;
+      }
+      try {
+        // Safe default or custom client configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSy" + "DUMMY_STASIS_AUTH_KEY_PROJECT",
+          authDomain: "cyber-relics-match.firebaseapp.com",
+          projectId: "cyber-relics-match",
+          storageBucket: "cyber-relics-match.appspot.com",
+          messagingSenderId: "1234567890",
+          appId: "1:1234567890:web:abcdef123456"
+        };
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        fbAuth = firebase.auth();
+        fbDb = firebase.firestore();
+        fbInitialized = true;
+
+        // Listen for authentication changes
+        fbAuth.onAuthStateChanged((user) => {
+          if (user && !user.isAnonymous) {
+            state.currentUser = user;
+            state.isGuest = false;
+            onUserAuthenticated(user);
+          } else {
+            state.currentUser = null;
+            state.isGuest = true;
+            onGuestModeActive();
+          }
+          updateAuthUI();
+        });
+      } catch (err) {
+        console.warn("Firebase initialized with local fallback:", err);
+      }
+    }
+
+    function onUserAuthenticated(user) {
+      const email = user.email || "Cosmic Pilot";
+      showToast(`WELCOME BACK, ${email.split('@')[0].toUpperCase()}!`);
+      // Pull latest cloud save
+      pullFromCloud(user.uid);
+    }
+
+    function onGuestModeActive() {
+      // Load local guest profile
+      loadSavedGame();
+    }
+
+    async function pushToCloud() {
+      if (!fbInitialized || !state.currentUser || state.isGuest) return;
+      try {
+        state.isSyncing = true;
+        const payload = {
+          currentLevel: state.currentLevel,
+          maxUnlockedLevel: state.maxUnlockedLevel,
+          coins: state.coins,
+          highScore: state.highScore,
+          lastDailyCompletedTimestamp: state.lastDailyCompletedTimestamp,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await fbDb.collection("users").doc(state.currentUser.uid).set(payload, { merge: true });
+        state.isSyncing = false;
+        updateAuthUI();
+      } catch (e) {
+        state.isSyncing = false;
+        console.warn("Cloud push error:", e);
+      }
+    }
+
+    async function pullFromCloud(uid) {
+      if (!fbInitialized || !uid) return;
+      try {
+        state.isSyncing = true;
+        updateAuthUI();
+        const doc = await fbDb.collection("users").doc(uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          // Merge best values
+          state.currentLevel = Math.max(state.currentLevel, data.currentLevel || 1);
+          state.maxUnlockedLevel = Math.max(state.maxUnlockedLevel, data.maxUnlockedLevel || state.currentLevel);
+          state.coins = Math.max(state.coins, data.coins !== undefined ? data.coins : 300);
+          state.highScore = Math.max(state.highScore, data.highScore || 0);
+          state.lastDailyCompletedTimestamp = Math.max(state.lastDailyCompletedTimestamp, data.lastDailyCompletedTimestamp || 0);
+          saveGame(false); // save merged copy locally
+          showToast("CLOUD PROFILE SYNCHRONIZED ☁️");
+        } else {
+          // New cloud user: upload current progress to their new cloud profile
+          await pushToCloud();
+          showToast("CLOUD SAVE INITIALIZED ☁️");
+        }
+        state.isSyncing = false;
+        updateAllUI();
+        updateAuthUI();
+      } catch (e) {
+        state.isSyncing = false;
+        console.warn("Cloud pull error:", e);
+        // If network issue, local data remains intact
+        updateAuthUI();
+      }
+    }
+
+    function updateAuthUI() {
+      const homeLabel = document.getElementById('homeUserLabel');
+      const authSub = document.getElementById('authSubtitle');
+      const authView = document.getElementById('authenticatedView');
+      const unauthView = document.getElementById('unauthenticatedView');
+      const settingsType = document.getElementById('settingsProfileType');
+      const settingsDesc = document.getElementById('settingsProfileDesc');
+
+      if (state.currentUser && !state.isGuest) {
+        const name = state.currentUser.email ? state.currentUser.email.split('@')[0] : 'Pilot';
+        if (homeLabel) homeLabel.innerText = name.length > 8 ? name.substring(0, 7) + '..' : name;
+        if (settingsType) {
+          settingsType.innerText = "Cloud User";
+          settingsType.style.color = "var(--neon-cyan)";
+        }
+        if (settingsDesc) {
+          settingsDesc.innerText = `Connected: ${state.currentUser.email}. Progression & coins synced to Cloud.`;
+        }
+        if (authView) authView.style.display = 'block';
+        if (unauthView) unauthView.style.display = 'none';
+
+        const emailEl = document.getElementById('authUserEmail');
+        if (emailEl) emailEl.innerText = state.currentUser.email || 'Pilot';
+        const clLevel = document.getElementById('cloudStatusLevel');
+        if (clLevel) clLevel.innerText = `Sector ${state.maxUnlockedLevel}`;
+        const clCoins = document.getElementById('cloudStatusCoins');
+        if (clCoins) clCoins.innerText = `${state.coins} 🪙`;
+      } else {
+        if (homeLabel) homeLabel.innerText = "Guest";
+        if (settingsType) {
+          settingsType.innerText = "Guest Mode";
+          settingsType.style.color = "var(--neon-emerald)";
+        }
+        if (settingsDesc) {
+          settingsDesc.innerText = "Playing as Guest. Progress saved locally on device. Sign in to cloud sync.";
+        }
+        if (authView) authView.style.display = 'none';
+        if (unauthView) unauthView.style.display = 'block';
+      }
+    }
+
+    function loadSavedGame() {
       try {
         const saved = localStorage.getItem('cyber_relics_save');
         if (saved) {
           const parsed = JSON.parse(saved);
-          state.sector = parsed.sector || 1;
+          state.currentLevel = parsed.currentLevel || 1;
+          state.maxUnlockedLevel = parsed.maxUnlockedLevel || state.currentLevel;
           state.coins = parsed.coins !== undefined ? parsed.coins : 300;
-          state.score = parsed.score || 0;
-          state.lastDailyDate = parsed.lastDailyDate || null;
+          state.highScore = parsed.highScore || 0;
+          state.lastDailyCompletedTimestamp = parsed.lastDailyCompletedTimestamp || 0;
         }
       } catch (e) {}
-      updateHUD();
+      updateAllUI();
     }
 
-    function saveState() {
+    function saveGame(syncToCloud = true) {
       try {
         localStorage.setItem('cyber_relics_save', JSON.stringify({
-          sector: state.sector,
+          currentLevel: state.currentLevel,
+          maxUnlockedLevel: state.maxUnlockedLevel,
           coins: state.coins,
-          score: state.score,
-          lastDailyDate: state.lastDailyDate
+          highScore: state.highScore,
+          lastDailyCompletedTimestamp: state.lastDailyCompletedTimestamp
         }));
       } catch (e) {}
+
+      if (syncToCloud && state.currentUser && !state.isGuest) {
+        pushToCloud();
+      }
     }
 
     /******************************************************************
-     * 3. PROCEDURAL LEVEL GENERATOR & OVERLAP SYSTEM
+     * 3. NAVIGATION (HOME <-> GAMEPLAY)
+     ******************************************************************/
+    function showHomeScreen() {
+      document.getElementById('gameplayScreen').style.display = 'none';
+      document.getElementById('homeScreen').style.display = 'flex';
+      updateAllUI();
+    }
+
+    function showGameplayScreen(isDaily = false) {
+      document.getElementById('homeScreen').style.display = 'none';
+      document.getElementById('gameplayScreen').style.display = 'flex';
+      state.isDailyMode = isDaily;
+      state.score = 0;
+      generateBoard(isDaily ? (state.currentLevel + 2) : state.currentLevel, isDaily);
+    }
+
+    document.getElementById('btnPlayLevel').addEventListener('click', () => {
+      sound.playButtonClick();
+      showGameplayScreen(false);
+    });
+
+    document.getElementById('btnDailyProtocol').addEventListener('click', () => {
+      const now = Date.now();
+      const elapsed = now - state.lastDailyCompletedTimestamp;
+      const cooldownMs = 24 * 60 * 60 * 1000;
+
+      if (elapsed < cooldownMs) {
+        sound.playError();
+        const remHours = Math.ceil((cooldownMs - elapsed) / (1000 * 60 * 60));
+        showToast(`DAILY PROTOCOL COMPLETED (${remHours}h COOLDOWN)`);
+        return;
+      }
+
+      sound.playButtonClick();
+      showGameplayScreen(true);
+    });
+
+    document.getElementById('btnReturnHome').addEventListener('click', () => {
+      sound.playButtonClick();
+      showHomeScreen();
+    });
+
+    document.getElementById('btnModalReturnHome').addEventListener('click', () => {
+      closeModal('settingsModal');
+      sound.playButtonClick();
+      showHomeScreen();
+    });
+
+    document.getElementById('victoryHomeBtn').addEventListener('click', () => {
+      closeModal('victoryModal');
+      sound.playButtonClick();
+      showHomeScreen();
+    });
+
+    document.getElementById('defeatHomeBtn').addEventListener('click', () => {
+      closeModal('defeatModal');
+      sound.playButtonClick();
+      showHomeScreen();
+    });
+
+    /******************************************************************
+     * 4. PROCEDURAL LEVEL GENERATOR & OVERLAP SYSTEM
      ******************************************************************/
     function generateBoard(sectorNum, isDaily = false) {
       const stage = document.getElementById('boardStage');
@@ -1217,17 +1857,18 @@
 
       const isHard = (sectorNum % 5 === 0) && !isDaily;
       document.getElementById('hardBadge').style.display = isHard ? 'inline-block' : 'none';
+      document.getElementById('dailyModeBanner').style.display = isDaily ? 'inline-block' : 'none';
 
-      // Tutorial on Level 1
+      // Tutorial on Level 1 (if not in daily mode)
       const isTutorial = (sectorNum === 1 && !isDaily);
       document.getElementById('tutorialBanner').style.display = isTutorial ? 'flex' : 'none';
 
-      // Determine relic count and triplets
+      // Determine active relic pool count based on sector
       const relicPoolCount = Math.min(3 + Math.floor(sectorNum / 2), RELICS.length);
       const activeRelics = RELICS.slice(0, relicPoolCount);
 
-      // Number of sets of 3
-      let sets = isTutorial ? 4 : Math.min(5 + sectorNum + (isHard ? 3 : 0), 15);
+      // Number of triplet sets
+      let sets = isTutorial ? 4 : Math.min(5 + sectorNum + (isHard ? 3 : 0), 16);
       const totalTiles = sets * 3;
 
       const pool = [];
@@ -1242,23 +1883,23 @@
         [pool[i], pool[j]] = [pool[j], pool[i]];
       }
 
-      // Generate positions with multi-layer 3D stacking
+      // Generate layered positions
       const positions = [];
       const startX = 16, startY = 20, stepX = 58, stepY = 64;
 
-      // Layer 0: Grid
+      // Layer 0: Base 5x5 grid
       for (let r = 0; r < 5; r++) {
         for (let c = 0; c < 5; c++) {
           positions.push({ x: startX + c * stepX, y: startY + r * stepY, layer: 0 });
         }
       }
-      // Layer 1: Pyramid Offset
+      // Layer 1: 4x4 Offset pyramid
       for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 4; c++) {
           positions.push({ x: startX + c * stepX + 29, y: startY + r * stepY + 32, layer: 1 });
         }
       }
-      // Layer 2: Core
+      // Layer 2: 3x3 Core
       for (let r = 0; r < 3; r++) {
         for (let c = 0; c < 3; c++) {
           positions.push({ x: startX + (c + 1) * stepX, y: startY + (r + 1) * stepY, layer: 2 });
@@ -1314,7 +1955,7 @@
       });
 
       recalculateOverlaps();
-      updateHUD();
+      updateAllUI();
     }
 
     function recalculateOverlaps() {
@@ -1339,19 +1980,19 @@
         lower.isBlocked = covered;
         if (covered) {
           lower.element.classList.add('blocked-tile');
-          lower.element.classList.remove('active-tile', 'tutorial-focus');
+          lower.element.classList.remove('active-tile', 'tutorial-highlight');
         } else {
           lower.element.classList.remove('blocked-tile');
           lower.element.classList.add('active-tile');
-          if (state.sector === 1 && !state.isDailyMode) {
-            lower.element.classList.add('tutorial-focus');
+          if (state.currentLevel === 1 && !state.isDailyMode) {
+            lower.element.classList.add('tutorial-highlight');
           }
         }
       }
     }
 
     /******************************************************************
-     * 4. TILE EXTRACTION & TRAY LOGIC (5 SLOTS)
+     * 5. TILE SELECTION & 5-SLOT STASIS TRAY LOGIC
      ******************************************************************/
     function onTileClick(tileId) {
       if (state.isBusy) return;
@@ -1366,14 +2007,14 @@
 
       if (state.trayTiles.length >= 5) {
         sound.playError();
-        showToast("TRAY FULL (5/5)");
+        showToast("STASIS TRAY FULL (5/5)");
         return;
       }
 
       sound.playTilePick();
       state.isBusy = true;
 
-      // Save for Undo booster
+      // Track move for Undo
       state.moveHistory.push({
         id: tile.id,
         type: tile.type,
@@ -1385,7 +2026,7 @@
       state.boardTiles.splice(idx, 1);
       recalculateOverlaps();
 
-      // Kinetic animation to target tray slot
+      // Kinetic fly-in animation to target slot
       const targetSlot = document.querySelector(`.tray-slot[data-slot="${state.trayTiles.length}"]`);
       const srcRect = tile.element.getBoundingClientRect();
       const dstRect = targetSlot.getBoundingClientRect();
@@ -1416,7 +2057,7 @@
           slot.appendChild(el);
         }
       });
-      updateHUD();
+      updateAllUI();
     }
 
     function resolveMatches() {
@@ -1435,17 +2076,20 @@
         state.isBusy = true;
         sound.playMatch3();
 
-        // Multiplier & Coins (+10 Coins per match)
+        // STRICT COIN RULE: DO NOT AWARD COINS ON MATCH-3 (Coins = 0)
         const now = Date.now();
         state.multiplier = (now - state.lastMatchTime < 4500) ? Math.min(state.multiplier + 1, 5) : 1;
         state.lastMatchTime = now;
 
         const pts = 300 * state.multiplier;
         state.score += pts;
-        state.coins += 10;
-        showToast(`MATCH-3! +${pts} PTS (+10🪙)`);
+        if (state.score > state.highScore) {
+          state.highScore = state.score;
+        }
 
-        // Flash and dissolve
+        showToast(`MATCH-3! +${pts} PTS`);
+
+        // Dissolve animation
         let removedCount = 0;
         document.querySelectorAll('.tray-slot').forEach((slot, idx) => {
           if (idx < state.trayTiles.length && state.trayTiles[idx].type === matchType && removedCount < 3) {
@@ -1483,27 +2127,48 @@
     function checkWin() {
       if (state.boardTiles.length === 0 && state.trayTiles.length === 0) {
         sound.playVictory();
-        const baseBonus = 1000 * state.sector;
+        const baseBonus = 1000 * state.currentLevel;
         state.score += baseBonus;
-        state.coins += 50;
-
-        // 100 Bonus Coins every 10 levels
-        const isTenMilestone = (state.sector % 10 === 0);
-        if (isTenMilestone) {
-          state.coins += 100;
-          document.getElementById('levelBonusBanner').style.display = 'block';
-        } else {
-          document.getElementById('levelBonusBanner').style.display = 'none';
+        if (state.score > state.highScore) {
+          state.highScore = state.score;
         }
 
-        saveState();
-        document.getElementById('victoryBonusText').innerText = `+${baseBonus.toLocaleString()} PTS &bull; +50 🪙`;
+        const milestoneBanner = document.getElementById('milestoneRewardBanner');
+        const victoryDesc = document.getElementById('victoryDesc');
+        const victoryRewardText = document.getElementById('victoryRewardText');
+
+        if (state.isDailyMode) {
+          // Exactly 25 Coins for Daily Challenge
+          state.coins += 25;
+          state.lastDailyCompletedTimestamp = Date.now();
+          victoryDesc.innerText = "Daily Protocol successfully harmonized!";
+          victoryRewardText.innerText = `+${baseBonus.toLocaleString()} PTS &bull; +25 🪙`;
+          milestoneBanner.style.display = 'none';
+        } else {
+          // Regular level cleared: 0 regular coins.
+          // STRICT RULE: Milestone bonus of 100 Coins strictly every 10th level
+          const isTenMilestone = (state.currentLevel % 10 === 0);
+          if (isTenMilestone) {
+            state.coins += 100;
+            milestoneBanner.style.display = 'block';
+            victoryRewardText.innerText = `+${baseBonus.toLocaleString()} PTS &bull; +100 🪙`;
+          } else {
+            milestoneBanner.style.display = 'none';
+            victoryRewardText.innerText = `+${baseBonus.toLocaleString()} PTS`;
+          }
+
+          victoryDesc.innerText = "All relics harmonized and containment stasis preserved.";
+          state.maxUnlockedLevel = Math.max(state.maxUnlockedLevel, state.currentLevel + 1);
+        }
+
+        saveGame();
+        updateAllUI();
         openModal('victoryModal');
       }
     }
 
     /******************************************************************
-     * 5. POWER-UPS / BOOSTERS LOGIC
+     * 6. POWER-UPS / BOOSTERS (100, 150, 200 COINS)
      ******************************************************************/
     // 1. UNDO / RECALL (100 Coins)
     document.getElementById('boosterUndo').addEventListener('click', () => {
@@ -1515,20 +2180,19 @@
       }
       if (state.trayTiles.length === 0 || state.moveHistory.length === 0) {
         sound.playError();
-        showToast("NO TILES IN TRAY TO UNDO");
+        showToast("NO TILES IN TRAY TO RECALL");
         return;
       }
 
       state.coins -= 100;
+      saveGame();
       sound.playBooster();
 
       const lastMove = state.moveHistory.pop();
-      // Remove from tray
       const trayIdx = state.trayTiles.findLastIndex(t => t.type === lastMove.type);
       if (trayIdx !== -1) state.trayTiles.splice(trayIdx, 1);
       renderTray();
 
-      // Restore to board
       const stage = document.getElementById('boardStage');
       const el = document.createElement('div');
       el.className = 'relic-tile active-tile';
@@ -1556,6 +2220,7 @@
       });
 
       recalculateOverlaps();
+      updateAllUI();
       showToast("RECALLED TILE (-100🪙)");
     });
 
@@ -1573,9 +2238,9 @@
       }
 
       state.coins -= 150;
+      saveGame();
       sound.playBooster();
 
-      // Extract types and shuffle them across remaining positions
       const types = state.boardTiles.map(t => t.type);
       for (let i = types.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1589,10 +2254,11 @@
       });
 
       recalculateOverlaps();
+      updateAllUI();
       showToast("BOARD RESHUFFLED (-150🪙)");
     });
 
-    // 3. COSMIC AUTO-MATCH / INSTANT HINT (200 Coins)
+    // 3. COSMIC AUTO-MATCH (200 Coins)
     document.getElementById('boosterAuto').addEventListener('click', () => {
       if (state.isBusy) return;
       if (state.coins < 200) {
@@ -1601,7 +2267,6 @@
         return;
       }
 
-      // Find any type that has at least 3 tiles across board + tray
       const allAvailable = {};
       state.trayTiles.forEach(t => allAvailable[t.type] = (allAvailable[t.type] || 0) + 1);
       state.boardTiles.forEach(t => allAvailable[t.type] = (allAvailable[t.type] || 0) + 1);
@@ -1616,16 +2281,15 @@
 
       if (!targetType) {
         sound.playError();
-        showToast("NO MATCH-3 TRIPLET FOUND");
+        showToast("NO VALID MATCH-3 TRIPLET FOUND");
         return;
       }
 
       state.coins -= 200;
+      saveGame();
       sound.playBooster();
 
-      // Instantly harmonize 3 tiles of this type
       let needed = 3;
-      // Remove from tray first
       state.trayTiles = state.trayTiles.filter(t => {
         if (t.type === targetType && needed > 0) {
           needed--;
@@ -1634,7 +2298,6 @@
         return true;
       });
 
-      // Remove remaining needed from board
       if (needed > 0) {
         const stage = document.getElementById('boardStage');
         for (let i = state.boardTiles.length - 1; i >= 0 && needed > 0; i--) {
@@ -1650,37 +2313,50 @@
       recalculateOverlaps();
       sound.playMatch3();
       state.score += 600;
+      updateAllUI();
       showToast("AUTO-MATCH SYNCHRONIZED! (+600 PTS)");
       checkWin();
     });
 
     /******************************************************************
-     * 6. DAILY CHALLENGE (+25 COINS / 24H)
+     * 7. UI SYNC & MODALS
      ******************************************************************/
-    document.getElementById('dailyBtn').addEventListener('click', () => {
-      const today = new Date().toISOString().slice(0, 10);
-      if (state.lastDailyDate === today) {
-        sound.playError();
-        showToast("DAILY CLAIMED! RETURNS TOMORROW");
-        return;
+    function updateAllUI() {
+      // Coins across all badges
+      document.querySelectorAll('.hudCoins').forEach(el => el.innerText = state.coins.toLocaleString());
+
+      // Home Screen
+      document.getElementById('homeTopLevel').innerText = String(state.maxUnlockedLevel).padStart(2, '0');
+      document.getElementById('homeMaxSector').innerText = String(state.maxUnlockedLevel).padStart(2, '0');
+      document.getElementById('homePlayLevelNum').innerText = state.currentLevel;
+      document.getElementById('homeHighScore').innerText = state.highScore.toLocaleString();
+
+      // Daily button cooldown status
+      const now = Date.now();
+      const elapsed = now - state.lastDailyCompletedTimestamp;
+      const cooldownMs = 24 * 60 * 60 * 1000;
+      const dailyBtn = document.getElementById('btnDailyProtocol');
+      const dailySub = document.getElementById('dailyStatusSubtext');
+      const dailyBadge = document.getElementById('dailyRewardBadge');
+
+      if (elapsed < cooldownMs) {
+        dailyBtn.classList.add('completed');
+        const remHours = Math.ceil((cooldownMs - elapsed) / (1000 * 60 * 60));
+        dailySub.innerText = `Completed &bull; Cooldown: ${remHours}h`;
+        dailyBadge.innerText = 'CLAIMED';
+        dailyBadge.style.borderColor = 'rgba(255,255,255,0.3)';
+        dailyBadge.style.color = '#8fa0dd';
+      } else {
+        dailyBtn.classList.remove('completed');
+        dailySub.innerText = 'Harmonize daily sector &bull; +25 🪙';
+        dailyBadge.innerText = '+25 🪙';
+        dailyBadge.style.borderColor = 'var(--neon-emerald)';
+        dailyBadge.style.color = 'var(--neon-emerald)';
       }
 
-      sound.playBooster();
-      state.lastDailyDate = today;
-      state.coins += 25;
-      saveState();
-      updateHUD();
-      showToast("DAILY CHALLENGE CLAIMED! +25 🪙");
-      generateBoard(state.sector + 2, true);
-    });
-
-    /******************************************************************
-     * 7. HUD & MODAL HELPERS
-     ******************************************************************/
-    function updateHUD() {
-      document.getElementById('hudSectorNum').innerText = String(state.sector).padStart(2, '0');
+      // Gameplay HUD
+      document.getElementById('gameSectorNum').innerText = String(state.currentLevel).padStart(2, '0');
       document.getElementById('hudScore').innerText = state.score.toLocaleString();
-      document.getElementById('hudCoins').innerText = state.coins.toLocaleString();
       document.getElementById('hudRelicsLeft').innerText = state.boardTiles.length;
       document.getElementById('multiplierBadge').innerText = `x${state.multiplier} MULTI`;
     }
@@ -1691,7 +2367,7 @@
       toast.innerText = msg;
       toast.classList.add('show');
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
     function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -1702,38 +2378,169 @@
       sound.startBgm();
     }, { once: true });
 
-    document.getElementById('settingsBtn').addEventListener('click', () => {
-      sound.playBooster();
-      openModal('settingsModal');
+    document.querySelectorAll('.openSettingsBtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sound.playButtonClick();
+        openModal('settingsModal');
+      });
     });
+
     document.getElementById('closeSettingsBtn').addEventListener('click', () => closeModal('settingsModal'));
+
+    // Auth & Cloud Modal Interactions
+    const openAuthModal = () => {
+      sound.playButtonClick();
+      closeModal('settingsModal');
+      openModal('authModal');
+    };
+
+    const homeUserChip = document.getElementById('homeUserChip');
+    if (homeUserChip) homeUserChip.addEventListener('click', openAuthModal);
+
+    const btnOpenAuth = document.getElementById('btnOpenAuthModal');
+    if (btnOpenAuth) btnOpenAuth.addEventListener('click', openAuthModal);
+
+    const closeAuthBtn = document.getElementById('closeAuthBtn');
+    if (closeAuthBtn) closeAuthBtn.addEventListener('click', () => closeModal('authModal'));
+
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const btnAuthSubmit = document.getElementById('btnAuthSubmit');
+
+    if (tabLogin && tabRegister) {
+      tabLogin.addEventListener('click', () => {
+        sound.playButtonClick();
+        state.authMode = 'login';
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+        if (btnAuthSubmit) btnAuthSubmit.innerText = 'SIGN IN';
+      });
+
+      tabRegister.addEventListener('click', () => {
+        sound.playButtonClick();
+        state.authMode = 'register';
+        tabRegister.classList.add('active');
+        tabLogin.classList.remove('active');
+        if (btnAuthSubmit) btnAuthSubmit.innerText = 'CREATE COSMIC ACCOUNT';
+      });
+    }
+
+    const authForm = document.getElementById('authForm');
+    if (authForm) {
+      authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('authEmailInput').value.trim();
+        const password = document.getElementById('authPasswordInput').value;
+        if (!email || !password) return;
+
+        sound.playButtonClick();
+        if (btnAuthSubmit) btnAuthSubmit.innerText = 'CONNECTING TO CLOUD...';
+
+        try {
+          if (state.authMode === 'register') {
+            if (fbAuth) {
+              await fbAuth.createUserWithEmailAndPassword(email, password);
+              showToast("ACCOUNT CREATED! CLOUD ACTIVE ☁️");
+            } else {
+              // Simulated offline persistent account if network/SDK offline
+              state.currentUser = { email: email, uid: 'local_' + btoa(email) };
+              state.isGuest = false;
+              showToast("ACCOUNT REGISTERED LOCALLY ☁️");
+              updateAuthUI();
+            }
+          } else {
+            if (fbAuth) {
+              await fbAuth.signInWithEmailAndPassword(email, password);
+              showToast("SIGNED IN! SYNCHRONIZED ☁️");
+            } else {
+              state.currentUser = { email: email, uid: 'local_' + btoa(email) };
+              state.isGuest = false;
+              showToast("SIGNED IN TO LOCAL PROFILE ☁️");
+              updateAuthUI();
+            }
+          }
+          closeModal('authModal');
+        } catch (err) {
+          sound.playError();
+          showToast(`AUTH ERROR: ${err.message || 'COULD NOT CONNECT'}`);
+        } finally {
+          if (btnAuthSubmit) {
+            btnAuthSubmit.innerText = state.authMode === 'register' ? 'CREATE COSMIC ACCOUNT' : 'SIGN IN';
+          }
+        }
+      });
+    }
+
+    const btnContinueGuest = document.getElementById('btnContinueGuest');
+    if (btnContinueGuest) {
+      btnContinueGuest.addEventListener('click', () => {
+        sound.playButtonClick();
+        state.isGuest = true;
+        closeModal('authModal');
+        showToast("CONTINUING IN GUEST MODE 🎮");
+        updateAuthUI();
+      });
+    }
+
+    const btnSignOut = document.getElementById('btnSignOut');
+    if (btnSignOut) {
+      btnSignOut.addEventListener('click', async () => {
+        sound.playButtonClick();
+        if (fbAuth) {
+          try { await fbAuth.signOut(); } catch (e) {}
+        }
+        state.currentUser = null;
+        state.isGuest = true;
+        closeModal('authModal');
+        updateAuthUI();
+        showToast("LOGGED OUT • GUEST MODE ACTIVE 🎮");
+      });
+    }
+
+    const btnManualSync = document.getElementById('btnManualSync');
+    if (btnManualSync) {
+      btnManualSync.addEventListener('click', async () => {
+        sound.playButtonClick();
+        if (state.currentUser) {
+          btnManualSync.innerText = 'SYNCING...';
+          await pushToCloud();
+          await pullFromCloud(state.currentUser.uid);
+          btnManualSync.innerText = '☁️ SYNC WITH CLOUD NOW';
+          showToast("CLOUD DATABASE UPDATED ☁️");
+        }
+      });
+    }
 
     document.getElementById('sfxToggle').addEventListener('change', (e) => sound.isSfxEnabled = e.target.checked);
     document.getElementById('bgmToggle').addEventListener('change', (e) => sound.isBgmEnabled = e.target.checked);
 
-    document.getElementById('restartSectorBtn').addEventListener('click', () => {
+    document.getElementById('btnRestartCurrentLevel').addEventListener('click', () => {
       closeModal('settingsModal');
-      generateBoard(state.sector);
+      generateBoard(state.currentLevel, state.isDailyMode);
       showToast("SECTOR RESET");
     });
 
     document.getElementById('nextSectorBtn').addEventListener('click', () => {
       closeModal('victoryModal');
-      state.sector++;
-      saveState();
-      generateBoard(state.sector);
-      showToast(`WARPING TO SECTOR ${state.sector}...`);
+      if (state.isDailyMode) {
+        showHomeScreen();
+      } else {
+        state.currentLevel++;
+        saveGame();
+        generateBoard(state.currentLevel, false);
+        showToast(`WARPING TO SECTOR ${state.currentLevel}...`);
+      }
     });
 
     document.getElementById('retrySectorBtn').addEventListener('click', () => {
       closeModal('defeatModal');
       state.score = Math.max(0, state.score - 300);
-      generateBoard(state.sector);
+      generateBoard(state.currentLevel, state.isDailyMode);
       showToast("RETRYING SECTOR");
     });
 
     /******************************************************************
-     * 8. CANVAS NEBULA STARFIELD
+     * 8. BACKGROUND NEBULA STARFIELD
      ******************************************************************/
     const bgCanvas = document.getElementById('nebulaCanvas');
     const bgCtx = bgCanvas.getContext('2d');
@@ -1772,10 +2579,11 @@
     requestAnimationFrame(renderBg);
 
     /******************************************************************
-     * 9. INITIALIZE
+     * 9. INIT
      ******************************************************************/
-    loadState();
-    generateBoard(state.sector);
+    loadSavedGame();
+    initFirebase();
+    showHomeScreen();
   </script>
 </body>
 </html>

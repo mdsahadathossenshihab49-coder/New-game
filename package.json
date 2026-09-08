@@ -1,7 +1,7 @@
 {
   "name": "cyber-celestial-tile-match",
   "version": "1.0.0",
-  "description": "Cyber-Celestial Relics: Tile Match-3 Android Native APK with Capacitor and GitHub Actions CI/CD",
+  "description": "Cyber Relics Match - 3D Layered Tile Match-3 Android Native APK with Capacitor and GitHub Actions CI/CD",
   "main": "index.html",
   "scripts": {
     "build": "mkdir -p www && cp index.html www/",

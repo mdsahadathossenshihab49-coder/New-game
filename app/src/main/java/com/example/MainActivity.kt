@@ -53,9 +53,10 @@ class MainActivity : ComponentActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
               )
-              // In virtualized Android / container environments without DRI rendernode devices,
-              // software rendering prevents Mesa rendernode errors while keeping WebGL and Canvas smooth.
-              setLayerType(View.LAYER_TYPE_HARDWARE, null)
+              // In headless / containerized Android emulator environments, virtual graphics lacks
+              // /dev/dri/renderD* devices. Setting software rendering on the WebView view disables
+              // direct GPU DRI calls from Chromium while rendering smooth HTML5 Canvas and CSS smoothly.
+              setLayerType(View.LAYER_TYPE_SOFTWARE, null)
               setBackgroundColor(0xFF060814.toInt())
 
               settings.apply {
