@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.ConsoleMessage
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -25,15 +27,22 @@ class MainActivity : ComponentActivity() {
   @SuppressLint("SetJavaScriptEnabled")
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    window.clearFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
     enableEdgeToEdge()
 
-    // Pre-create WebView code cache directories to prevent Chromium simple_file_enumerator opendir error
+    // Clean up any incomplete HTTP Cache folder created manually by earlier runs
+    // to allow Chromium SimpleCache to initialize cleanly
     try {
-      val codeCache = File(cacheDir, "WebView/Default/HTTP Cache/Code Cache")
-      File(codeCache, "js").mkdirs()
-      File(codeCache, "wasm").mkdirs()
+      val httpCache = File(cacheDir, "WebView/Default/HTTP Cache")
+      if (httpCache.exists()) {
+        val fakeIndex = File(httpCache, "fake-index")
+        val realIndex = File(httpCache, "the-real-index")
+        if (!fakeIndex.exists() && !realIndex.exists()) {
+          httpCache.deleteRecursively()
+        }
+      }
     } catch (e: Exception) {
-      Log.w("MainActivity", "Cache dir init: ${e.message}")
+      Log.w("MainActivity", "Cache check: ${e.message}")
     }
 
     val view = WebView(this).apply {
@@ -41,8 +50,6 @@ class MainActivity : ComponentActivity() {
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT
       )
-      // In containerized Android emulator environments without /dev/dri/renderD*,
-      // software layer on WebView disables direct GPU rendernode calls while rendering Canvas and CSS smoothly.
       setLayerType(View.LAYER_TYPE_SOFTWARE, null)
       setBackgroundColor(0xFF060814.toInt())
 
@@ -51,11 +58,16 @@ class MainActivity : ComponentActivity() {
         domStorageEnabled = true
         databaseEnabled = true
         mediaPlaybackRequiresUserGesture = false
-        cacheMode = WebSettings.LOAD_NO_CACHE
+        cacheMode = WebSettings.LOAD_DEFAULT
         allowFileAccess = true
         allowContentAccess = true
       }
-      webViewClient = WebViewClient()
+      webViewClient = object : WebViewClient() {
+        override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
+          Log.w("MainActivity", "Render process gone; didCrash=${detail?.didCrash()}")
+          return true
+        }
+      }
       webChromeClient = object : WebChromeClient() {
         override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
           Log.d("AstralWeb", "${consoleMessage?.message()} [${consoleMessage?.sourceId()}:${consoleMessage?.lineNumber()}]")

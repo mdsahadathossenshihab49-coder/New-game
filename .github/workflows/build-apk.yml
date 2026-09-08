@@ -65,3 +65,27 @@ jobs:
           name: CyberRelics-Match-Debug-APK
           path: ${{ steps.find_apk.outputs.apk_path }}
           retention-days: 30
+
+      - name: 📦 Prepare APK for GitHub Release
+        id: prep_apk
+        run: |
+          mkdir -p release_bin
+          cp "${{ steps.find_apk.outputs.apk_path }}" release_bin/CyberRelics-Match.apk
+          echo "release_file=release_bin/CyberRelics-Match.apk" >> $GITHUB_OUTPUT
+
+      - name: 🚀 Publish Direct APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.0.${{ github.run_number }}"
+          name: "CyberRelics Match APK (Build #${{ github.run_number }})"
+          body: |
+            ### 📱 CyberRelics Match Android APK
+
+            আপনার অ্যান্ড্রয়েড ফোনে সরাসরি ডাউনলোড ও ইনস্টল করতে নিচের `CyberRelics-Match.apk` ফাইলে ট্যাপ করুন:
+            - **File:** `CyberRelics-Match.apk`
+            - **Status:** Ready for Install
+          draft: false
+          prerelease: false
+          files: release_bin/CyberRelics-Match.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
