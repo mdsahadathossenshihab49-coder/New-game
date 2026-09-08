@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-android:
@@ -28,36 +28,34 @@ jobs:
       - name: 🤖 Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: 🟢 Set up Node.js Environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: 📦 Install NPM & Capacitor Dependencies
+      - name: 🔐 Ensure Debug Keystore & Environment Exist
         run: |
-          npm install
-
-      - name: ⚙️ Initialize and Synchronize Capacitor Android Platform
-        run: |
-          if [ ! -d "android" ]; then
-            echo "Initializing fresh Capacitor Android native project..."
-            npx cap add android
+          touch .env
+          if [ ! -f "debug.keystore" ]; then
+            if [ -f "debug.keystore.base64" ]; then
+              echo "Decoding debug.keystore from base64..."
+              base64 -d debug.keystore.base64 > debug.keystore
+            else
+              echo "Generating debug.keystore..."
+              keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            fi
           fi
-          npx cap sync android
 
       - name: 🔑 Grant Execution Permissions to Gradle Wrapper
         run: |
-          chmod +x android/gradlew
+          chmod +x gradlew
 
       - name: 🔨 Compile Android Native APK (assembleDebug)
         run: |
-          cd android
           ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: 🔍 Locate Generated Debug APK
         id: find_apk
         run: |
-          APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            APK_PATH=$(find . -name "*.apk" | head -n 1)
+          fi
           echo "Found APK at: $APK_PATH"
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
 
@@ -65,5 +63,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CyberRelics-Match-Debug-APK
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: ${{ steps.find_apk.outputs.apk_path }}
           retention-days: 30
